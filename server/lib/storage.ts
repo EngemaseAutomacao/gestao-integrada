@@ -18,6 +18,28 @@ const LOCAL_DIR = path.resolve(process.cwd(), ".data/uploads");
 export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
 export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // limite de corpo da Vercel é 4.5 MB
 
+/**
+ * Confere pelos primeiros bytes se o conteúdo é mesmo uma imagem do tipo
+ * declarado (o tipo enviado pelo navegador não é confiável).
+ */
+export function looksLikeImage(bytes: Uint8Array, contentType: string): boolean {
+  const at = (i: number, ...sig: number[]) => sig.every((b, k) => bytes[i + k] === b);
+  const ascii = (i: number, text: string) => at(i, ...[...text].map((ch) => ch.charCodeAt(0)));
+  switch (contentType) {
+    case "image/jpeg":
+      return at(0, 0xff, 0xd8, 0xff);
+    case "image/png":
+      return at(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
+    case "image/webp":
+      return ascii(0, "RIFF") && ascii(8, "WEBP");
+    case "image/heic":
+    case "image/heif":
+      return ascii(4, "ftyp");
+    default:
+      return false;
+  }
+}
+
 /** Valida o formato do path para evitar travessia de diretório. */
 export function isSafeStoragePath(p: unknown): p is string {
   return (

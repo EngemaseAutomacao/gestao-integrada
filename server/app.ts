@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
+import { bodyLimit } from "hono/body-limit";
 import { secureHeaders } from "hono/secure-headers";
 import { ZodError } from "zod";
 import { loadUser, requireAuth, type AuthVars } from "./lib/auth.js";
@@ -21,6 +22,16 @@ app.use(async (c, next) => {
     throw forbidden("Requisição inválida");
   }
   await next();
+});
+
+/**
+ * Limite de tamanho do corpo: dados comuns são pequenos; só o envio de fotos
+ * (/api/files) precisa de mais. Barra requisições gigantes feitas para gastar
+ * memória do servidor na validação.
+ */
+app.use(async (c, next) => {
+  const maxSize = c.req.path.startsWith("/api/files") ? 5 * 1024 * 1024 : 512 * 1024;
+  return bodyLimit({ maxSize, onError: (ctx) => ctx.json({ error: "Requisição muito grande" }, 413) })(c, next);
 });
 
 app.get("/health", (c) => c.json({ ok: true, time: new Date().toISOString() }));

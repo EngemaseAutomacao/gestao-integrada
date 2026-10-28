@@ -8,6 +8,7 @@ import {
   deleteFiles,
   getFile,
   isSafeStoragePath,
+  looksLikeImage,
   putFile,
   slugifyForFile,
 } from "../lib/storage.js";
@@ -69,7 +70,11 @@ export const fileRoutes = new Hono<{ Variables: AuthVars }>()
     const rand = crypto.randomUUID().slice(0, 8);
     const path = `${module}/${direction}/${dateFolder}/${slug}_${ymd}_${prefix}_${rand}.${ext}`;
 
-    await putFile(path, await file.arrayBuffer(), contentType);
+    const bytes = await file.arrayBuffer();
+    if (!looksLikeImage(new Uint8Array(bytes, 0, Math.min(16, bytes.byteLength)), contentType)) {
+      throw badRequest("O arquivo não é uma imagem válida");
+    }
+    await putFile(path, bytes, contentType);
     await db.uploaded_files.create({
       data: { path, owner_id: user.id, content_type: contentType, size: file.size },
     });
@@ -182,6 +187,9 @@ export const fileRoutes = new Hono<{ Variables: AuthVars }>()
       "Content-Type": file.contentType,
       // Conteúdo imutável (paths únicos), mas privado: só o navegador do usuário guarda.
       "Cache-Control": "private, max-age=86400, immutable",
+      // Mesmo que algo inesperado seja servido aqui, o navegador não executa nada.
+      "Content-Security-Policy": "default-src 'none'; img-src 'self'; sandbox",
+      "X-Content-Type-Options": "nosniff",
       ...(file.size ? { "Content-Length": String(file.size) } : {}),
     });
   });

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, ApiError } from "@/lib/api";
 import type { Profile as DomainProfile } from "@/types/domain";
+import { OFFLINE_CACHE_PREFIX } from "@/hooks/useOfflineStorage";
 
 const PROFILE_CACHE_KEY = "engemase_cached_profile";
 const PROFILE_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 horas
@@ -132,6 +133,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     setProfile(null);
     queryClient.clear();
+    // Em aparelho compartilhado, não deixa dados do usuário anterior guardados.
+    // (Operações offline pendentes ficam, para não perder registros.)
+    try {
+      for (const key of Object.keys(localStorage)) {
+        if (key === "engemase_rq_cache" || key.startsWith(OFFLINE_CACHE_PREFIX)) localStorage.removeItem(key);
+      }
+    } catch {
+      // armazenamento indisponível
+    }
     navigate("/auth");
   };
 

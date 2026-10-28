@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dateRange } from "../routes/shared.js";
 import { splitTags } from "../services/toolCheckouts.js";
 import { isAllowedPushEndpoint } from "./push.js";
-import { isSafeStoragePath } from "./storage.js";
+import { isSafeStoragePath, looksLikeImage } from "./storage.js";
 
 describe("isSafeStoragePath", () => {
   it("aceita paths gerados pelo app", () => {
@@ -40,5 +40,19 @@ describe("isAllowedPushEndpoint", () => {
     expect(isAllowedPushEndpoint("https://web.push.apple.com/xyz")).toBe(true);
     expect(isAllowedPushEndpoint("https://evil.example.com/push")).toBe(false);
     expect(isAllowedPushEndpoint("http://fcm.googleapis.com/x")).toBe(false);
+  });
+});
+
+describe("looksLikeImage", () => {
+  const bytes = (...b: number[]) => new Uint8Array([...b, ...new Array(16).fill(0)]);
+  it("aceita JPEG e PNG verdadeiros", () => {
+    expect(looksLikeImage(bytes(0xff, 0xd8, 0xff, 0xe0), "image/jpeg")).toBe(true);
+    expect(looksLikeImage(bytes(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a), "image/png")).toBe(true);
+  });
+  it("recusa HTML/script disfarçado de imagem", () => {
+    const html = new TextEncoder().encode("<script>alert(1)</script>");
+    expect(looksLikeImage(html, "image/jpeg")).toBe(false);
+    expect(looksLikeImage(html, "image/png")).toBe(false);
+    expect(looksLikeImage(bytes(0xff, 0xd8, 0xff), "image/svg+xml")).toBe(false);
   });
 });

@@ -32,10 +32,16 @@ export async function enforceRateLimit(key: string, limit: number, windowSeconds
   }
 }
 
+/**
+ * IP do cliente. Na Vercel, `x-vercel-forwarded-for`/`x-real-ip` são definidos
+ * pela própria plataforma; o `x-forwarded-for` pode trazer valores enviados pelo
+ * cliente na frente, então fica só como último recurso (dev local).
+ */
 export function clientIp(headers: Headers): string {
   return (
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
     headers.get("x-real-ip") ||
+    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown"
   );
 }

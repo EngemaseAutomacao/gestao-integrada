@@ -26,20 +26,8 @@
     <meta property="og:description" content="Gestão integrada de ferramentas e veículos da Engemase Engenharia." />
     <meta property="og:image" content="/icon-512.png" />
 
-    <!-- Theme bootstrap (anti-FOUC): applies stored or system theme before React mounts -->
-    <script>
-      (function () {
-        try {
-          var stored = localStorage.getItem("engemase-ui-theme") || "system";
-          var resolved = stored === "system"
-            ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
-            : stored;
-          var root = document.documentElement;
-          root.classList.remove("light", "dark");
-          root.classList.add(resolved);
-        } catch (e) {}
-      })();
-    </script>
+    <!-- Tema e tela de abertura antes do React (ver public/boot.js) -->
+    <script src="/boot.js"></script>
   </head>
 
   <body>
@@ -60,7 +48,6 @@
         <p class="splash-tagline">Controle inteligente de ferramentas e veículos</p>
       </div>
     </div>
-    <script>window.__SPLASH_START__ = Date.now();</script>
     <style>
       #splash-screen {
         position: fixed; inset: 0; z-index: 99999;

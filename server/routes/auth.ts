@@ -57,6 +57,8 @@ export const authRoutes = new Hono<{ Variables: AuthVars }>()
 
     // Aceita usuário ou e-mail.
     const login = body.username.toLowerCase();
+    // Limite por conta além do limite por IP: barra tentativas espalhadas em vários IPs.
+    await enforceRateLimit(`login-user:${login}`, 10, 600);
     const user = await db.profiles.findFirst({
       where: login.includes("@") ? { email: { equals: login, mode: "insensitive" } } : { username: login },
     });
@@ -139,6 +141,7 @@ export const authRoutes = new Hono<{ Variables: AuthVars }>()
 
   .post("/change-password", requireAuthAllowUnapproved, async (c) => {
     const user = c.get("user");
+    await enforceRateLimit(`change-password:${user.id}`, 10, 600);
     const body = await parseBody(
       c,
       z.object({
@@ -185,11 +188,9 @@ export const authRoutes = new Hono<{ Variables: AuthVars }>()
     const user = c.get("user");
     const body = await parseBody(
       c,
-      z.object({
-        first_login: z.literal(false).optional(),
-        onboarding_completed: z.literal(true).optional(),
-        avatar_url: z.string().max(512).nullable().optional(),
-      }),
+      // Só o que a própria pessoa pode mudar. first_login sai apenas pela troca
+      // de senha (senão daria para pular a troca obrigatória após um reset).
+      z.object({ onboarding_completed: z.literal(true).optional() }).strict("Campo não permitido"),
     );
     const updated = await db.profiles.update({ where: { id: user.id }, data: body });
     return c.json({ profile: toPublicProfile(updated) });

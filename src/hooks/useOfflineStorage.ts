@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const CACHE_PREFIX = "engemase_cache_";
+export const OFFLINE_CACHE_PREFIX = "engemase_cache_";
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface CacheWrapper<T> {
@@ -14,7 +14,7 @@ export function useOfflineStorage<T>(key: string, initialData: T | null = null, 
   const [isStale, setIsStale] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
-  const cacheKey = `${CACHE_PREFIX}${key}`;
+  const cacheKey = `${OFFLINE_CACHE_PREFIX}${key}`;
 
   useEffect(() => {
     loadFromCache();
