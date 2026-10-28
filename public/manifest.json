@@ -1,7 +1,7 @@
 {
-  "name": "Gestão Integrada Engemase",
+  "name": "Gestão Integrada",
   "short_name": "Gestão Integrada",
-  "description": "Gestão integrada de ferramentas, veículos e jornada para Engemase Engenharia",
+  "description": "Gestão integrada de ferramentas e veículos da Engemase Engenharia",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#1a3654",
