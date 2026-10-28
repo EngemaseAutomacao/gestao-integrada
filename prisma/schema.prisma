@@ -1,0 +1,331 @@
+// Schema do banco — Gestão Integrada Engemase
+//
+// Os nomes de campos seguem snake_case de propósito: são os mesmos nomes das
+// colunas do banco antigo (Supabase), o que permite migrar os dados 1:1 e manter
+// o formato JSON que o frontend já consome.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../server/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum user_category {
+  engemase_employee
+  third_party
+  socios
+}
+
+enum user_role {
+  admin
+  employee
+  third_party
+}
+
+enum checkout_status {
+  checked_out
+  checked_in
+}
+
+model profiles {
+  id                   String        @id @default(uuid()) @db.Uuid
+  email                String        @unique
+  username             String?       @unique
+  full_name            String
+  company              String?
+  avatar_url           String?
+  category             user_category @default(engemase_employee)
+  role                 user_role     @default(employee)
+  approved             Boolean       @default(false)
+  first_login          Boolean       @default(true)
+  /// Tour de boas-vindas concluído (antes reaproveitava first_login e nunca era exibido).
+  onboarding_completed Boolean       @default(false)
+  /// Hash bcrypt da senha. Nunca é enviado ao frontend.
+  password_hash        String
+  /// Incrementado ao trocar senha / excluir sessões; invalida tokens antigos.
+  token_version        Int           @default(0)
+  last_sign_in_at      DateTime?     @db.Timestamptz(6)
+  last_access_at       DateTime?     @db.Timestamptz(6)
+  created_at           DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime      @updatedAt @db.Timestamptz(6)
+
+  tool_checkouts           tool_checkouts[]     @relation("tool_checkout_user")
+  tool_checkouts_out_by    tool_checkouts[]     @relation("tool_checkout_out_by")
+  tool_checkouts_in_by     tool_checkouts[]     @relation("tool_checkout_in_by")
+  vehicle_checkouts        vehicle_checkouts[]  @relation("vehicle_checkout_user")
+  vehicle_checkouts_out_by vehicle_checkouts[]  @relation("vehicle_checkout_out_by")
+  vehicle_checkouts_in_by  vehicle_checkouts[]  @relation("vehicle_checkout_in_by")
+  notifications            notifications[]
+  push_subscriptions       push_subscriptions[]
+}
+
+model tools {
+  id                 String   @id @default(uuid()) @db.Uuid
+  name               String
+  description        String?
+  brand              String?
+  /// Uma ou mais TAGs separadas por vírgula (uma por unidade física).
+  tag                String?
+  qr_code            String?  @unique
+  condition          String?  @default("good")
+  quantity_total     Int      @default(0)
+  quantity_available Int      @default(0)
+  employee_only      Boolean  @default(false)
+  /// Ferramentas removidas da planilha mas com histórico ficam arquivadas (false)
+  /// em vez de apagadas — antes o histórico de retiradas era perdido em cascata.
+  active             Boolean  @default(true)
+  created_by         String?  @db.Uuid
+  created_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime @updatedAt @db.Timestamptz(6)
+
+  checkouts tool_checkouts[]
+
+  @@index([name])
+}
+
+model tool_checkouts {
+  id                     String          @id @default(uuid()) @db.Uuid
+  tool_id                String          @db.Uuid
+  user_id                String          @db.Uuid
+  status                 checkout_status @default(checked_out)
+  checkout_date          DateTime        @default(now()) @db.Timestamptz(6)
+  checkin_date           DateTime?       @db.Timestamptz(6)
+  estimated_return_date  DateTime?       @db.Timestamptz(6)
+  checked_out_by         String          @db.Uuid
+  checked_in_by          String?         @db.Uuid
+  construction_site      String?
+  selected_tag           String?
+  notes                  String?
+  checkout_photo_url     String?
+  checkin_photo_url      String?
+  checkout_signature_url String?
+  checkin_signature_url  String?
+  /// Identificador da operação gerada offline (evita duplicar ao reenviar).
+  client_op_id           String?         @unique
+  created_at             DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime        @updatedAt @db.Timestamptz(6)
+
+  tool                tools     @relation(fields: [tool_id], references: [id], onDelete: Cascade)
+  user                profiles  @relation("tool_checkout_user", fields: [user_id], references: [id], onDelete: Cascade)
+  checked_out_by_user profiles  @relation("tool_checkout_out_by", fields: [checked_out_by], references: [id])
+  checked_in_by_user  profiles? @relation("tool_checkout_in_by", fields: [checked_in_by], references: [id])
+
+  @@index([tool_id, status])
+  @@index([user_id, status])
+  @@index([checkout_date(sort: Desc)])
+  @@index([status, estimated_return_date])
+}
+
+model vehicles {
+  id                  String    @id @default(uuid()) @db.Uuid
+  name                String
+  plate               String    @unique
+  brand               String?
+  model               String?
+  year                Int?
+  color               String?
+  image_url           String?
+  /// available | in_use | maintenance
+  status              String?   @default("available")
+  /// vehicle | platform
+  vehicle_type        String    @default("vehicle")
+  is_charging         Boolean   @default(false)
+  charging_started_at DateTime? @db.Timestamptz(6)
+  charging_started_by String?   @db.Uuid
+  created_by          String?   @db.Uuid
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @updatedAt @db.Timestamptz(6)
+
+  checkouts         vehicle_checkouts[]
+  charging_sessions vehicle_charging_sessions[]
+}
+
+model vehicle_checkouts {
+  id                            String    @id @default(uuid()) @db.Uuid
+  vehicle_id                    String    @db.Uuid
+  user_id                       String    @db.Uuid
+  /// checked_out | checked_in
+  status                        String?   @default("checked_out")
+  checkout_date                 DateTime  @default(now()) @db.Timestamptz(6)
+  checkin_date                  DateTime? @db.Timestamptz(6)
+  estimated_return_date         DateTime? @db.Timestamptz(6)
+  estimated_return_time         String?
+  checked_out_by                String    @db.Uuid
+  checked_in_by                 String?   @db.Uuid
+  km_checkout                   Int
+  km_checkin                    Int?
+  km_checkin_automatic          Boolean?  @default(false)
+  charges_during_use            Int?
+  refueled                      Boolean?
+  destination                   String?
+  destination_address           String?
+  purpose                       String?
+  notes                         String?
+  is_outside_city               Boolean?  @default(false)
+  origin_address                String?
+  origin_latitude               Float?
+  origin_longitude              Float?
+  estimated_distance_km         Float?
+  estimated_duration_minutes    Int?
+  photo_front_checkout          String?
+  photo_back_checkout           String?
+  photo_left_checkout           String?
+  photo_right_checkout          String?
+  photo_dashboard_checkout      String?
+  photo_control_checkout        String?
+  photo_interior_front_checkout String?
+  photo_interior_back_checkout  String?
+  photo_wheel_fl_checkout       String?
+  photo_wheel_fr_checkout       String?
+  photo_wheel_rl_checkout       String?
+  photo_wheel_rr_checkout       String?
+  photo_front_checkin           String?
+  photo_back_checkin            String?
+  photo_left_checkin            String?
+  photo_right_checkin           String?
+  photo_dashboard_checkin       String?
+  photo_control_checkin         String?
+  photo_interior_front_checkin  String?
+  photo_interior_back_checkin   String?
+  photo_wheel_fl_checkin        String?
+  photo_wheel_fr_checkin        String?
+  photo_wheel_rl_checkin        String?
+  photo_wheel_rr_checkin        String?
+  /// Identificador da operação gerada offline (evita duplicar ao reenviar).
+  client_op_id                  String?   @unique
+  created_at                    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                    DateTime  @updatedAt @db.Timestamptz(6)
+
+  vehicle             vehicles  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+  user                profiles  @relation("vehicle_checkout_user", fields: [user_id], references: [id])
+  checked_out_by_user profiles  @relation("vehicle_checkout_out_by", fields: [checked_out_by], references: [id])
+  checked_in_by_user  profiles? @relation("vehicle_checkout_in_by", fields: [checked_in_by], references: [id])
+
+  @@index([vehicle_id, status])
+  @@index([user_id, status])
+  @@index([checkout_date(sort: Desc)])
+}
+
+model vehicle_charging_sessions {
+  id         String    @id @default(uuid()) @db.Uuid
+  vehicle_id String    @db.Uuid
+  started_at DateTime  @default(now()) @db.Timestamptz(6)
+  started_by String?   @db.Uuid
+  ended_at   DateTime? @db.Timestamptz(6)
+  ended_by   String?   @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+
+  vehicle vehicles @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+
+  @@index([vehicle_id, started_at(sort: Desc)])
+}
+
+model construction_sites {
+  id         String   @id @default(uuid()) @db.Uuid
+  name       String
+  address    String?
+  latitude   Float?
+  longitude  Float?
+  active     Boolean  @default(true)
+  /// trello | manual — a sincronização do Trello só remove obras de origem "trello".
+  source     String   @default("manual")
+  created_by String?  @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([name])
+}
+
+model notifications {
+  id          String   @id @default(uuid()) @db.Uuid
+  user_id     String   @db.Uuid
+  type        String
+  title       String
+  message     String
+  read        Boolean  @default(false)
+  push_sent   Boolean? @default(false)
+  tool_id     String?  @db.Uuid
+  checkout_id String?  @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  user profiles @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at(sort: Desc)])
+  @@index([user_id, read])
+  @@index([push_sent])
+}
+
+model push_subscriptions {
+  id           String    @id @default(uuid()) @db.Uuid
+  user_id      String    @db.Uuid
+  endpoint     String
+  p256dh       String
+  auth         String
+  last_used_at DateTime? @default(now()) @db.Timestamptz(6)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime  @updatedAt @db.Timestamptz(6)
+
+  user profiles @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, endpoint])
+}
+
+model system_logs {
+  id          String   @id @default(uuid()) @db.Uuid
+  action      String
+  entity_type String
+  entity_id   String?  @db.Uuid
+  user_id     String?  @db.Uuid
+  user_name   String?
+  details     Json?    @default("{}")
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at(sort: Desc)])
+  @@index([entity_type, entity_id])
+}
+
+model data_retention_settings {
+  id             String   @id @default(uuid()) @db.Uuid
+  setting_key    String   @unique
+  label          String
+  description    String?
+  retention_days Int      @default(90)
+  enabled        Boolean  @default(false)
+  updated_by     String?  @db.Uuid
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @updatedAt @db.Timestamptz(6)
+}
+
+model sync_state {
+  key         String   @id
+  last_run_at DateTime @default(now()) @db.Timestamptz(6)
+  summary     Json?
+}
+
+/// Índice dos arquivos enviados (fotos/assinaturas). O conteúdo fica no
+/// Vercel Blob (privado) e é servido por /api/files/<path> com checagem de acesso.
+model uploaded_files {
+  path         String   @id
+  owner_id     String?  @db.Uuid
+  content_type String?
+  size         Int?
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([owner_id])
+  @@index([created_at(sort: Desc)])
+}
+
+model rate_limits {
+  id            String   @id @default(uuid()) @db.Uuid
+  bucket_key    String
+  window_start  DateTime @db.Timestamptz(6)
+  request_count Int      @default(1)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([bucket_key, window_start])
+  @@index([window_start])
+}

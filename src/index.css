@@ -1,0 +1,199 @@
+#lovable-badge {
+  display: none !important;
+}
+
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Engemase Brand Colors - Blue and White Theme */
+    --background: 0 0% 100%;
+    --foreground: 215 25% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 20%;
+
+    /* Primary Blue - darkened for WCAG AA contrast (4.5:1) */
+    --primary: 211 100% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 211 100% 37%;
+    --primary-light: 211 100% 95%;
+
+    /* Secondary - Lighter Blue */
+    --secondary: 211 100% 96%;
+    --secondary-foreground: 211 100% 50%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 211 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Success Green */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning Orange */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Destructive Red */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 211 100% 50%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 20%;
+    --sidebar-primary: 211 100% 42%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 211 100% 96%;
+    --sidebar-accent-foreground: 211 100% 42%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 211 100% 50%;
+
+    /* Category Badges */
+    --badge-employee: 211 100% 50%;
+    --badge-employee-foreground: 0 0% 100%;
+    --badge-thirdparty: 38 92% 50%;
+    --badge-thirdparty-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 220 20% 10%;
+    --foreground: 210 20% 92%;
+
+    --card: 220 18% 13%;
+    --card-foreground: 210 20% 92%;
+
+    --popover: 220 18% 15%;
+    --popover-foreground: 210 20% 92%;
+
+    --primary: 211 100% 55%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 211 100% 48%;
+    --primary-light: 211 60% 18%;
+
+    --secondary: 220 16% 20%;
+    --secondary-foreground: 210 20% 88%;
+
+    --muted: 220 14% 18%;
+    --muted-foreground: 215 15% 58%;
+
+    --accent: 211 80% 55%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 142 60% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 85% 52%;
+    --warning-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 22%;
+    --input: 220 14% 20%;
+    --ring: 211 100% 55%;
+
+    --sidebar-background: 220 20% 10%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-primary: 211 100% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 16% 18%;
+    --sidebar-accent-foreground: 210 20% 88%;
+    --sidebar-border: 220 14% 22%;
+    --sidebar-ring: 211 100% 55%;
+
+    --badge-employee: 211 90% 55%;
+    --badge-employee-foreground: 0 0% 100%;
+    --badge-thirdparty: 38 85% 52%;
+    --badge-thirdparty-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, h4, h5, h6,
+  [data-display],
+  .font-display {
+    font-family: "Space Grotesk", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  /* Consistent, accessible focus ring (WCAG AA) */
+  :where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  /* Suaviza a entrada de cada rota */
+  main > * {
+    animation: route-fade-in 180ms ease-out both;
+  }
+  @keyframes route-fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+
+@layer utilities {
+  .hover-scale {
+    @apply transition-transform duration-200 ease-out hover:scale-[1.02] active:scale-[0.99];
+  }
+  .interactive-card {
+    @apply transition-all duration-200 ease-out hover:shadow-elevated hover:-translate-y-0.5 active:translate-y-0;
+  }
+  .story-link {
+    @apply relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-primary after:origin-bottom-right after:transition-transform after:duration-300 hover:after:scale-x-100 hover:after:origin-bottom-left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

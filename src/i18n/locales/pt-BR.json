@@ -1,0 +1,39 @@
+{
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "confirm": "Confirmar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "loading": "Carregando...",
+    "search": "Buscar",
+    "export": "Exportar",
+    "filter": "Filtrar",
+    "yes": "Sim",
+    "no": "Não",
+    "close": "Fechar"
+  },
+  "nav": {
+    "home": "Início",
+    "tools": "Ferramentas",
+    "vehicles": "Veículos",
+    "history": "Histórico",
+    "admin": "Painel",
+    "profile": "Perfil",
+    "logout": "Sair"
+  },
+  "auth": {
+    "login": "Entrar",
+    "register": "Cadastrar",
+    "username": "Usuário",
+    "password": "Senha",
+    "forgotPassword": "Esqueci minha senha"
+  },
+  "errors": {
+    "generic": "Ocorreu um erro inesperado. Tente novamente.",
+    "network": "Falha de conexão. Verifique sua internet.",
+    "unauthorized": "Você não tem permissão para esta ação."
+  }
+}
