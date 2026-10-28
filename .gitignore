@@ -34,7 +34,6 @@ dist-ssr
 server/generated/
 
 # Exportação de dados (contém dados pessoais e hashes de senha)
-engemase-export*.json
 
 # Gerado automaticamente a cada build (vite.config.ts)
 public/version.json

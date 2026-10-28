@@ -30,7 +30,7 @@ server/
   dev.ts             Servidor da API para desenvolvimento
 api/index.ts         Função serverless da Vercel (encaminha para server/app.ts)
 prisma/              Schema e migrations
-scripts/             Seed do primeiro admin e migração de dados do Supabase
+scripts/             Seed do primeiro admin e build da Vercel
 ```
 
 ## Desenvolvimento local
@@ -60,7 +60,7 @@ Sem `BLOB_READ_WRITE_TOKEN`, as fotos ficam em `.data/uploads` localmente.
      aparelhos já inscritos continuarem recebendo push.
    - `TRELLO_*`, `GOOGLE_SHEETS_API_KEY`, `GOOGLE_SHEET_ID`, `ANTHROPIC_API_KEY` (opcionais).
 5. **Deploy.** O build roda `prisma migrate deploy`, então as tabelas são criadas automaticamente.
-6. **Primeiro acesso:** migre os dados (abaixo) ou crie o admin com `npm run db:seed`,
+6. **Banco novo (sem dados):** crie o primeiro admin com `npm run db:seed`,
    apontando `DATABASE_URL` para o banco de produção.
 
 ### Rotinas agendadas (Vercel Cron)
@@ -76,34 +76,12 @@ Sem `BLOB_READ_WRITE_TOKEN`, as fotos ficam em `.data/uploads` localmente.
 > atrasos também é disparada quando alguém usa o app (no máximo a cada 10 minutos).
 > No plano **Pro** dá para mudar o cron de notificações para `*/10 * * * *` no `vercel.json`.
 
-## Migração dos dados do Supabase
+## Migração do sistema antigo
 
-> **Projeto no Lovable Cloud (sem acesso ao Supabase)?** Há dois caminhos:
-> 1. **Backup do Lovable** (*Cloud → Database → Backup*): o arquivo `.backup` é convertido em
->    `engemase-export.json` e importado com
->    `IMPORT_FILE=engemase-export.json DATABASE_URL=... npm run migrate:supabase`.
->    O backup traz o registro das fotos, mas não os arquivos; para copiá-los, exporte o bucket
->    `imagens` e use `FILES_DIR=<pasta> ... -- --with-files`.
-> 2. **Função de exportação temporária:** siga
->    [`scripts/lovable-export/LEIA-ME.md`](scripts/lovable-export/LEIA-ME.md).
-
-O script copia usuários (com as senhas atuais), ferramentas, veículos, retiradas, obras,
-notificações, inscrições de push, logs e configurações. Ele pode ser executado mais de uma vez.
-
-```sh
-# String de conexão em Supabase → Project Settings → Database → Connection string (URI)
-SOURCE_DATABASE_URL="postgresql://postgres:<senha>@db.<projeto>.supabase.co:5432/postgres" \
-DATABASE_URL="<DATABASE_URL de produção>" \
-npm run migrate:supabase
-
-# Para copiar também as fotos do bucket "imagens" para o Vercel Blob:
-SUPABASE_URL="https://<projeto>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="<service role>" \
-BLOB_READ_WRITE_TOKEN="<token do Blob>" \
-SOURCE_DATABASE_URL="..." DATABASE_URL="..." \
-npm run migrate:supabase -- --with-files
-```
-
-Depois da migração, desative os crons do Supabase para os avisos não serem enviados em dobro.
+A migração do Lovable/Supabase foi concluída em 28/10/2026 (usuários com as senhas atuais,
+ferramentas, veículos, histórico, obras, notificações e fotos). As ferramentas usadas só
+para isso (página `/importar` e scripts) foram removidas; estão no histórico do git, no
+commit anterior a "Remove código de migração".
 
 ## Scripts
 
@@ -116,4 +94,3 @@ Depois da migração, desative os crons do Supabase para os avisos não serem en
 | `npm run db:migrate` | Cria uma nova migration a partir do `prisma/schema.prisma` |
 | `npm run db:deploy` | Aplica as migrations |
 | `npm run db:seed` | Cria o primeiro administrador |
-| `npm run migrate:supabase` | Migra os dados do projeto antigo |

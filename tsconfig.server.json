@@ -20,8 +20,5 @@
     "api",
     "scripts",
     "prisma.config.ts"
-  ],
-  "exclude": [
-    "scripts/lovable-export"
   ]
 }

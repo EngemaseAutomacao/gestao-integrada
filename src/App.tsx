@@ -21,7 +21,6 @@ import { OnboardingTutorial } from "./components/OnboardingTutorial";
 // Lazy-loaded pages
 const Auth = lazy(() => import("./pages/Auth"));
 const Register = lazy(() => import("./pages/Register"));
-const Importar = lazy(() => import("./pages/Importar"));
 const ChangePassword = lazy(() => import("./pages/ChangePassword"));
 const Home = lazy(() => import("./pages/Home"));
 const FerramentasMenu = lazy(() => import("./pages/FerramentasMenu"));
@@ -131,7 +130,6 @@ const App = () => (
                     {/* Public routes (no Layout) */}
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/register" element={<Register />} />
-                    <Route path="/importar" element={<Importar />} />
                     <Route path="/change-password" element={<ChangePassword />} />
 
                     {/* Authenticated routes share a single Layout instance (no remount on navigation) */}
