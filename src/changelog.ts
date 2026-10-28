@@ -25,6 +25,8 @@ export const changelog: ChangelogEntry[] = [
       { type: "fix", text: "Notificações no celular voltam a funcionar; aparelhos que já tinham ativado são reinscritos automaticamente." },
       { type: "fix", text: "Sincronização de obras (Trello) e de ferramentas (planilha) configurada no novo servidor." },
       { type: "improvement", text: "O app instalado passa a se chamar apenas \"Gestão Integrada\"." },
+      { type: "improvement", text: "Na devolução de veículo, o KM de chegada é digitado direto (a leitura automática por IA foi removida). O KM de saída aparece como referência." },
+      { type: "improvement", text: "Avisos de atraso passam a sair poucos minutos depois do vencimento." },
     ],
   },
   {

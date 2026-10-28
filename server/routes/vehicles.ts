@@ -3,10 +3,8 @@ import { z } from "zod";
 import { isAdmin, requireAdmin, type AuthVars } from "../lib/auth.js";
 import { logAction } from "../lib/audit.js";
 import { db, type Prisma } from "../lib/db.js";
-import { badRequest, conflict, forbidden, notFound, optionalText, parseBody, parseQuery, uuid } from "../lib/http.js";
+import { badRequest, conflict, notFound, optionalText, parseBody, parseQuery, uuid } from "../lib/http.js";
 import { isSafeStoragePath } from "../lib/storage.js";
-import { readOdometer } from "../services/odometer.js";
-import { enforceRateLimit } from "../lib/rateLimit.js";
 import {
   ALL_VEHICLE_PHOTO_COLUMNS,
   checkinVehicle,
@@ -283,28 +281,6 @@ export const vehicleCheckoutRoutes = new Hono<{ Variables: AuthVars }>()
     );
     const updated = await checkinVehicle(c.get("user"), uuid.parse(c.req.param("id")), body);
     return c.json(updated);
-  })
-
-  /** Leitura do hodômetro por IA (antiga edge function read-odometer). */
-  .post("/read-odometer", async (c) => {
-    const user = c.get("user");
-    await enforceRateLimit(`read-odometer:${user.id}`, 10, 60);
-    const body = await parseBody(
-      c,
-      z.object({
-        checkout_photo_path: z.string().refine(isSafeStoragePath, "Caminho inválido"),
-        checkin_photo_path: z.string().refine(isSafeStoragePath, "Caminho inválido"),
-      }),
-    );
-    if (!isAdmin(user)) {
-      // A foto de saída precisa pertencer a uma retirada do próprio usuário.
-      const owned = await db.vehicle_checkouts.findFirst({
-        where: { user_id: user.id, photo_dashboard_checkout: body.checkout_photo_path },
-        select: { id: true },
-      });
-      if (!owned) throw forbidden();
-    }
-    return c.json(await readOdometer(body.checkout_photo_path, body.checkin_photo_path));
   })
 
   /** Correção administrativa (KM, observações, abastecimento). */

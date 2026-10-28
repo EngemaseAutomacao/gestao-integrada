@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { Loader2, Search, Eye, FileText, FileSpreadsheet, Camera, Brain, Trash2, X, List, Clock, PlugZap, ChevronDown, ChevronRight, SlidersHorizontal, ChevronLeft, ChevronsLeft, ChevronsRight, AlertTriangle, Wrench } from "lucide-react";
+import { Loader2, Search, Eye, FileText, FileSpreadsheet, Camera, Trash2, X, List, Clock, PlugZap, ChevronDown, ChevronRight, SlidersHorizontal, ChevronLeft, ChevronsLeft, ChevronsRight, AlertTriangle, Wrench } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { HistorySkeleton } from "@/components/PageSkeleton";
 import { AssetTimeline } from "@/components/admin/AssetTimeline";
@@ -142,14 +142,6 @@ export default function AdminVehicleHistory() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [periodFilter, setPeriodFilter] = useState<string>("all");
   const [selectedEntry, setSelectedEntry] = useState<VehicleHistoryEntry | null>(null);
-  const [aiEstimation, setAiEstimation] = useState<{
-    checkout_km: number | null;
-    checkin_km: number | null;
-    distance_km: number | null;
-    confidence: string;
-    notes: string;
-  } | null>(null);
-  const [estimating, setEstimating] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; entry: VehicleHistoryEntry | null }>({ open: false, entry: null });
   const [viewMode, setViewMode] = useState<"table" | "timeline">("table");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -384,71 +376,6 @@ export default function AdminVehicleHistory() {
   const hasPhotos = (entry: VehicleHistoryEntry) => {
     return entry.photo_front_checkout || entry.photo_front_checkin ||
       entry.photo_dashboard_checkout || entry.photo_dashboard_checkin;
-  };
-
-  const canEstimateKm = (entry: VehicleHistoryEntry) => {
-    return entry.photo_dashboard_checkout && entry.photo_dashboard_checkin;
-  };
-
-  const estimateKm = async (entry: VehicleHistoryEntry) => {
-    if (!entry.photo_dashboard_checkout || !entry.photo_dashboard_checkin) {
-      toast.error("Fotos do painel de saída e devolução são necessárias");
-      return;
-    }
-
-    setEstimating(true);
-    setAiEstimation(null);
-
-    try {
-      const data = await api.post("/vehicle-checkouts/read-odometer", {
-        checkout_photo_path: entry.photo_dashboard_checkout,
-        checkin_photo_path: entry.photo_dashboard_checkin,
-      });
-
-      const estimation = data as {
-        checkout_km: number | null;
-        checkin_km: number | null;
-        distance_km: number | null;
-        confidence: string;
-        notes: string;
-      };
-
-      setAiEstimation(estimation);
-
-      if (estimation.confidence === "low" || estimation.checkin_km === null) {
-        toast.warning("Baixa confiança na leitura. Verifique manualmente.");
-        return;
-      }
-
-      const updateData: { km_checkin: number; km_checkout?: number } = {
-        km_checkin: estimation.checkin_km,
-      };
-
-      if (estimation.checkout_km !== null && entry.km_checkout === 0) {
-        updateData.km_checkout = estimation.checkout_km;
-      }
-
-      await api.patch(`/vehicle-checkouts/${entry.id}`, { ...updateData, km_checkin_automatic: true });
-
-      queryClient.invalidateQueries({ queryKey: ["admin-vehicle-history"] });
-
-      setSelectedEntry((prev) =>
-        prev && prev.id === entry.id
-          ? {
-              ...prev,
-              km_checkin: estimation.checkin_km,
-              km_checkout: updateData.km_checkout ?? prev.km_checkout,
-            }
-          : prev
-      );
-
-      toast.success("Estimativa concluída e salva no histórico!");
-    } catch (error) {
-      console.error("Error estimating km:", error);
-      toast.error("Erro ao estimar quilometragem");
-    } finally {
-      setEstimating(false);
-    }
   };
 
   const exportPDF = async () => {
@@ -784,7 +711,7 @@ export default function AdminVehicleHistory() {
                           <TableRow
                             data-row="main"
                             className="cursor-pointer"
-                            onClick={() => { setExpandedId(isExpanded ? null : entry.id); if (!isExpanded) setAiEstimation(null); }}
+                            onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                           >
                             <TableCell className="w-8 pr-0">
                               {isExpanded ? (
@@ -833,7 +760,7 @@ export default function AdminVehicleHistory() {
                                   variant="ghost"
                                   size="icon"
                                   className="h-7 w-7"
-                                  onClick={() => { setExpandedId(isExpanded ? null : entry.id); if (!isExpanded) setAiEstimation(null); }}
+                                  onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                                   title={isExpanded ? "Ocultar detalhes" : "Ver detalhes"}
                                 >
                                   <Eye className="w-4 h-4" />
@@ -912,54 +839,6 @@ export default function AdminVehicleHistory() {
                                       <p className="text-xs text-muted-foreground">
                                         Abastecido: {entry.refueled === null ? "Não informado" : entry.refueled ? "Sim" : "Não"}
                                       </p>
-                                    </div>
-                                  )}
-
-                                  {canEstimateKm(entry) && (
-                                    <div className="pt-3 border-t">
-                                      <div className="flex items-center justify-between flex-wrap gap-2">
-                                        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Estimativa por IA</p>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="gap-2"
-                                          onClick={() => { setSelectedEntry(entry); estimateKm(entry); }}
-                                          disabled={estimating}
-                                        >
-                                          {estimating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Brain className="w-4 h-4" />}
-                                          {estimating ? "Analisando..." : "Estimar KM via IA"}
-                                        </Button>
-                                      </div>
-                                      {aiEstimation && selectedEntry?.id === entry.id && (
-                                        <div className="mt-3 p-3 rounded-lg bg-muted/50 space-y-2">
-                                          <div className="flex items-center gap-2">
-                                            <Badge variant={
-                                              aiEstimation.confidence === "high" ? "default" :
-                                              aiEstimation.confidence === "medium" ? "secondary" : "destructive"
-                                            }>
-                                              {aiEstimation.confidence === "high" ? "Alta confiança" :
-                                               aiEstimation.confidence === "medium" ? "Média confiança" : "Baixa confiança"}
-                                            </Badge>
-                                          </div>
-                                          <div className="grid grid-cols-3 gap-2 text-sm">
-                                            <div>
-                                              <p className="text-muted-foreground text-xs">KM Saída</p>
-                                              <p className="font-medium">{aiEstimation.checkout_km?.toLocaleString() || "N/A"}</p>
-                                            </div>
-                                            <div>
-                                              <p className="text-muted-foreground text-xs">KM Chegada</p>
-                                              <p className="font-medium">{aiEstimation.checkin_km?.toLocaleString() || "N/A"}</p>
-                                            </div>
-                                            <div>
-                                              <p className="text-muted-foreground text-xs">Distância</p>
-                                              <p className="font-bold text-primary">{aiEstimation.distance_km?.toLocaleString() || "N/A"} km</p>
-                                            </div>
-                                          </div>
-                                          {aiEstimation.notes && (
-                                            <p className="text-xs text-muted-foreground">{aiEstimation.notes}</p>
-                                          )}
-                                        </div>
-                                      )}
                                     </div>
                                   )}
 
@@ -1050,7 +929,7 @@ export default function AdminVehicleHistory() {
                       <div className="flex gap-1">
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm" onClick={() => { setSelectedEntry(entry); setAiEstimation(null); }}>
+                            <Button variant="ghost" size="sm" onClick={() => setSelectedEntry(entry)}>
                               <Eye className="w-4 h-4" />
                             </Button>
                           </DialogTrigger>

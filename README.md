@@ -15,7 +15,7 @@ Esta versão (3.x) substitui a anterior, feita no Lovable com Supabase:
 | Storage (bucket `imagens`) | **Vercel Blob** privado, servido por `/api/files/...` |
 | pg_cron | **Vercel Cron** (`vercel.json`) |
 | Realtime | Atualização a cada 30 s e ao voltar para a aba |
-| Lovable AI Gateway (hodômetro) | API da Anthropic (opcional) |
+| Leitura do hodômetro por IA | Removida: o KM de chegada é digitado na devolução |
 
 ## Estrutura
 
@@ -58,7 +58,7 @@ Sem `BLOB_READ_WRITE_TOKEN`, as fotos ficam em `.data/uploads` localmente.
    - `CRON_SECRET` (obrigatória para as rotinas automáticas).
    - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY`: use **as mesmas do Supabase**, para os
      aparelhos já inscritos continuarem recebendo push.
-   - `TRELLO_*`, `GOOGLE_SHEETS_API_KEY`, `GOOGLE_SHEET_ID`, `ANTHROPIC_API_KEY` (opcionais).
+   - `TRELLO_*`, `GOOGLE_SHEETS_API_KEY`, `GOOGLE_SHEET_ID` (sincronizações) e `TICK_SECRET` (avisos a cada 5 min).
 5. **Deploy.** O build roda `prisma migrate deploy`, então as tabelas são criadas automaticamente.
 6. **Banco novo (sem dados):** crie o primeiro admin com `npm run db:seed`,
    apontando `DATABASE_URL` para o banco de produção.
