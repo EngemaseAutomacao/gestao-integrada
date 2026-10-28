@@ -4,6 +4,7 @@ import { logRoutes, retentionRoutes, searchRoutes, siteRoutes, statsRoutes, sync
 import { authRoutes } from "./auth.js";
 import { cronRoutes } from "./cron.js";
 import { fileRoutes } from "./files.js";
+import { setupRoutes } from "./setup.js";
 import { notificationRoutes, pushRoutes } from "./notifications.js";
 import { toolCheckoutRoutes, toolRoutes } from "./tools.js";
 import { userRoutes } from "./users.js";
@@ -13,6 +14,7 @@ import { vehicleCheckoutRoutes, vehicleRoutes } from "./vehicles.js";
 export function adminRoutesMount(app: Hono<{ Variables: AuthVars }>, requireAuth: MiddlewareHandler<{ Variables: AuthVars }>) {
   app.route("/auth", authRoutes);
   app.route("/cron", cronRoutes);
+  app.route("/setup", setupRoutes);
 
   const protectedPaths = [
     "/users",
