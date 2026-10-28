@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { Hono } from "hono";
 import { isAdmin, requireAdmin, type AuthVars } from "../lib/auth.js";
 import { db } from "../lib/db.js";
@@ -176,6 +178,20 @@ export const fileRoutes = new Hono<{ Variables: AuthVars }>()
   })
 
   /** Serve a imagem (privada) com checagem de permissão. */
+  /**
+   * Manual do usuário em PDF — só para quem está logado (antes ficava público em
+   * /manual-usuario.pdf). O arquivo vai junto da função (vercel.json → includeFiles).
+   */
+  .get("/manual", async (c) => {
+    const pdf = await readFile(path.join(process.cwd(), "server/assets/manual-usuario.pdf"));
+    return c.body(new Uint8Array(pdf), 200, {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": 'attachment; filename="manual-gestao-integrada.pdf"',
+      "Cache-Control": "private, max-age=3600",
+      "X-Content-Type-Options": "nosniff",
+    });
+  })
+
   .get("/*", async (c) => {
     const user = c.get("user");
     const path = decodeURIComponent(c.req.path.replace(/^\/api\/files\//, ""));

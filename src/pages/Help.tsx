@@ -23,8 +23,8 @@ const faqSections: Section[] = [
     title: "Primeiros Passos",
     icon: Rocket,
     questions: [
-      { q: "Como instalar o app no celular?", a: "Abra o site no navegador do celular (Chrome no Android, Safari no iPhone). Toque no menu do navegador e escolha 'Instalar aplicativo' (Android) ou 'Adicionar à Tela de Início' (iPhone). O ícone da Engemase aparecerá como um app normal." },
-      { q: "Preciso criar uma conta?", a: "Não. Sua conta é criada pelo administrador. Se ainda não recebeu acesso, procure o responsável da sua obra ou o setor administrativo." },
+      { q: "Como instalar o app no celular?", a: "Abra o site no navegador do celular (Chrome no Android, Safari no iPhone). Na tela inicial do sistema aparece o botão 'Instalar app': toque nele e confirme. No iPhone, toque em Compartilhar e depois em 'Adicionar à Tela de Início'. O ícone da Engemase aparecerá como um app normal." },
+      { q: "Preciso criar uma conta?", a: "Você pode tocar em 'Solicitar acesso' na tela de login e preencher seus dados; um administrador aprova o cadastro. O administrador também pode criar a conta para você." },
       { q: "Esqueci minha senha, o que faço?", a: "Peça ao administrador para redefinir sua senha. No primeiro acesso após a redefinição, o sistema pedirá que você crie uma nova senha." },
     ],
   },
@@ -35,17 +35,17 @@ const faqSections: Section[] = [
       { q: "Como retirar uma ferramenta?", a: "Acesse Ferramentas › Registrar Saída, selecione a ferramenta, informe a obra, escolha o prazo de devolução (1, 7, 15 ou 30 dias) e indique se ela está Completa ou Incompleta. Confirme para finalizar." },
       { q: "Como funciona a Retirada em Lote?", a: "Na tela de Saída, ative 'Retirada em Lote', selecione várias ferramentas, clique em 'Confirmar Seleção' e finalize informando obra e prazo uma única vez para todas." },
       { q: "Como devolver uma ferramenta?", a: "Acesse Ferramentas › Devolução, selecione a ferramenta que está com você e confirme. Para devolver várias de uma vez, use 'Devolução em Lote' na tela de Pendências." },
-      { q: "Como prorrogar uma devolução em atraso?", a: "Em Pendências, abra a ferramenta atrasada e use a opção 'Prorrogar' para definir um novo prazo." },
-      { q: "Não achei a obra na lista, o que fazer?", a: "As obras vêm do quadro do Trello. Se a obra não aparece, peça para o responsável adicioná-la à lista 'Fazendo' no Trello. A sincronização é automática." },
+      { q: "Como prorrogar uma devolução em atraso?", a: "Em Ferramentas › Painel Geral, a ferramenta atrasada que está com você mostra o botão 'Prorrogar'. Toque nele e defina o novo prazo." },
+      { q: "Não achei a obra na lista, o que fazer?", a: "As obras vêm do quadro do Trello (listas 'A Fazer' e 'Fazendo'). Se a obra não aparece, peça para o responsável adicioná-la a uma dessas listas. A sincronização é automática toda madrugada, e o administrador também pode sincronizar na hora." },
     ],
   },
   {
     title: "Veículos",
     icon: Car,
     questions: [
-      { q: "Como registrar a saída de um veículo?", a: "Acesse Veículos › Registrar Saída, selecione o veículo, informe a quilometragem, o destino, o prazo previsto de retorno e tire as fotos obrigatórias (hodômetro e laterais)." },
-      { q: "Quais fotos são obrigatórias?", a: "Foto do hodômetro (KM), frente, traseira e duas laterais do veículo. Isso protege você e a empresa em caso de avarias." },
-      { q: "Como registrar a chegada?", a: "Acesse Veículos › Registrar Chegada, informe a quilometragem final, se houve abastecimento e tire as fotos finais do veículo." },
+      { q: "Como registrar a saída de um veículo?", a: "Acesse Veículos › Registrar Saída, selecione o veículo, escolha a obra de destino e o prazo de devolução, confira o KM inicial (já vem preenchido com a última devolução — corrija se o painel mostrar outro valor) e tire as fotos obrigatórias." },
+      { q: "Quais fotos são obrigatórias?", a: "Veículos: frente, traseira, lado esquerdo, lado direito, painel (com o KM visível), interior dianteiro e interior traseiro. Plataformas: os 4 lados, o controle e as 4 rodas. As fotos protegem você e a empresa em caso de avarias." },
+      { q: "Como registrar a devolução?", a: "Acesse Veículos › Registrar Devolução, selecione o veículo, digite o KM final que aparece no painel e tire as fotos. Se o KM for menor que o da saída, o sistema avisa para você conferir." },
       { q: "Esqueci de registrar a saída, e agora?", a: "Peça a um administrador para fazer o lançamento em Modo Manual com a data/hora correta." },
     ],
   },
@@ -53,8 +53,8 @@ const faqSections: Section[] = [
     title: "Notificações e Prazos",
     icon: Bell,
     questions: [
-      { q: "Quando recebo notificações?", a: "Você é avisado quando um prazo está próximo do vencimento, quando uma ferramenta/veículo está atrasado e quando há atualizações importantes do app." },
-      { q: "As notificações não estão chegando", a: "Verifique se você permitiu notificações no navegador e nas configurações do celular. Se instalou o app, feche e reabra uma vez para reativar a assinatura." },
+      { q: "Quando recebo notificações?", a: "Você é avisado quando uma ferramenta ou veículo que está com você passa do prazo de devolução, quando um veículo fica em uso por mais de um dia e quando o administrador envia uma mensagem. Administradores também recebem as retiradas e devoluções feitas pelos colaboradores." },
+      { q: "As notificações não estão chegando", a: "Abra o app no celular, toque no sininho e, se aparecer 'Ativar push', toque e permita. Depois use o botão de teste (sino com ondas) no sininho: ele mostra se cada aparelho recebeu. No iPhone, o app precisa ter sido instalado pela 'Adicionar à Tela de Início' e aberto pelo ícone." },
     ],
   },
   {
@@ -144,7 +144,7 @@ export default function Help() {
               </p>
             </div>
             <Button asChild size="sm" className="w-full sm:w-auto">
-              <a href="/manual-usuario.pdf" target="_blank" rel="noopener noreferrer" download>
+              <a href="/api/files/manual" download>
                 <Download className="w-4 h-4 mr-2" />
                 Baixar PDF
               </a>

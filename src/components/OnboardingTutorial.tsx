@@ -21,7 +21,7 @@ type Role = "admin" | "employee" | "third_party";
 function buildStepsForRole(role: Role): DriveStep[] {
   const welcome: DriveStep = {
     popover: {
-      title: "Bem-vindo à Gestão Integrada Engemase",
+      title: "Bem-vindo à Gestão Integrada",
       description:
         "Vamos fazer um tour rápido pelos principais módulos do sistema. Você pode pular a qualquer momento.",
       align: "center",
@@ -33,7 +33,7 @@ function buildStepsForRole(role: Role): DriveStep[] {
     popover: {
       title: "Ferramentas",
       description:
-        "Retire e devolva ferramentas, registre manutenções e abra ocorrências. Toda movimentação fica registrada com foto e assinatura.",
+        "Retire e devolva ferramentas, uma a uma ou em lote, informando a obra e o prazo. Toda movimentação fica registrada no seu histórico.",
     },
   };
 
@@ -42,7 +42,7 @@ function buildStepsForRole(role: Role): DriveStep[] {
     popover: {
       title: "Veículos",
       description:
-        "Registre saídas e chegadas de veículos com fotos obrigatórias dos 4 lados + painel. O sistema calcula rota e quilometragem automaticamente.",
+        "Registre saídas e devoluções de veículos com o KM do painel e fotos obrigatórias (lados, painel e interior). O sistema calcula os quilômetros rodados.",
     },
   };
 
@@ -60,7 +60,7 @@ function buildStepsForRole(role: Role): DriveStep[] {
     popover: {
       title: "Painel de Administração",
       description:
-        "Gerencie usuários, aprove cadastros, configure permissões, veja logs e auditoria — tudo em um painel central.",
+        "Gerencie usuários, aprove cadastros, envie notificações, acompanhe o que está em uso, relatórios e auditoria — tudo em um painel central.",
     },
   };
 
@@ -77,7 +77,7 @@ function buildStepsForRole(role: Role): DriveStep[] {
     popover: {
       title: "Tudo pronto!",
       description:
-        "Você pode rever este tour a qualquer momento na tela de Ajuda. Bom trabalho! 🚀",
+        "Em caso de dúvidas, abra a tela de Ajuda pelo menu. Bom trabalho! 🚀",
       align: "center",
     },
   };
