@@ -4,7 +4,8 @@ import { logAction } from "../lib/audit.js";
 import { db } from "../lib/db.js";
 import { HttpError, badRequest, forbidden, unauthorized } from "../lib/http.js";
 import { clientIp, enforceRateLimit } from "../lib/rateLimit.js";
-import { deleteFiles, isSafeStoragePath, putFile } from "../lib/storage.js";
+import sharp from "sharp";
+import { deleteFiles, getFile, isSafeStoragePath, putFile } from "../lib/storage.js";
 import { importExportFile, type ExportFile } from "../services/importExport.js";
 
 /**
@@ -109,4 +110,56 @@ export const setupRoutes = new Hono()
       data: { path, owner_id: null, content_type: contentType, size: body.byteLength },
     });
     return c.json({ status: existing ? "replaced" : "imported" });
+  })
+
+  /**
+   * TEMPORÁRIO: comprime as fotos importadas antes da compressão no app
+   * (estouraram o 1 GB do Blob). Chamar repetidamente até remaining = 0.
+   */
+  .get("/compress-photos", async (c) => {
+    requireImportSecret(c.req.query("token"));
+    const started = Date.now();
+    const big = await db.uploaded_files.findMany({
+      where: { size: { gt: 600 * 1024 }, content_type: "image/jpeg" },
+      orderBy: { size: "desc" },
+      select: { path: true, size: true },
+    });
+    let done = 0;
+    let saved = 0;
+    const failed: string[] = [];
+    for (const f of big) {
+      if (Date.now() - started > 45_000) break;
+      try {
+        const file = await getFile(f.path);
+        if (!file) throw new Error("não encontrada no Blob");
+        const original = Buffer.isBuffer(file.body)
+          ? file.body
+          : Buffer.from(await new Response(file.body as ReadableStream).arrayBuffer());
+        const small = await sharp(original)
+          .rotate()
+          .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
+          .jpeg({ quality: 75, mozjpeg: true })
+          .toBuffer();
+        if (small.length >= original.length) {
+          await db.uploaded_files.update({ where: { path: f.path }, data: { size: original.length } });
+          continue;
+        }
+        await deleteFiles([f.path]);
+        try {
+          await putFile(f.path, small, "image/jpeg");
+        } catch (err) {
+          await putFile(f.path, original, "image/jpeg");
+          throw err;
+        }
+        await db.uploaded_files.update({ where: { path: f.path }, data: { size: small.length } });
+        done++;
+        saved += original.length - small.length;
+      } catch (err) {
+        failed.push(`${f.path}: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    const remaining = await db.uploaded_files.count({
+      where: { size: { gt: 600 * 1024 }, content_type: "image/jpeg" },
+    });
+    return c.json({ done, savedMB: Math.round(saved / 1048576), remaining, failed });
   });
