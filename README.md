@@ -77,8 +77,14 @@ Sem `BLOB_READ_WRITE_TOKEN`, as fotos ficam em `.data/uploads` localmente.
 
 ## Migração dos dados do Supabase
 
-> **Projeto no Lovable Cloud (sem acesso ao Supabase)?** Siga
-> [`scripts/lovable-export/LEIA-ME.md`](scripts/lovable-export/LEIA-ME.md).
+> **Projeto no Lovable Cloud (sem acesso ao Supabase)?** Há dois caminhos:
+> 1. **Backup do Lovable** (*Cloud → Database → Backup*): o arquivo `.backup` é convertido em
+>    `engemase-export.json` e importado com
+>    `IMPORT_FILE=engemase-export.json DATABASE_URL=... npm run migrate:supabase`.
+>    O backup traz o registro das fotos, mas não os arquivos; para copiá-los, exporte o bucket
+>    `imagens` e use `FILES_DIR=<pasta> ... -- --with-files`.
+> 2. **Função de exportação temporária:** siga
+>    [`scripts/lovable-export/LEIA-ME.md`](scripts/lovable-export/LEIA-ME.md).
 
 O script copia usuários (com as senhas atuais), ferramentas, veículos, retiradas, obras,
 notificações, inscrições de push, logs e configurações. Ele pode ser executado mais de uma vez.

@@ -10,6 +10,10 @@
  *      DATABASE_URL="<url do Prisma Postgres>" \
  *      npm run migrate:supabase -- [--with-files]
  *
+ * C) Arquivo de exportação gerado a partir do backup do Lovable (engemase-export.json):
+ *      IMPORT_FILE="engemase-export.json" DATABASE_URL="..." npm run migrate:supabase
+ *    Fotos: FILES_DIR="<pasta com o conteúdo do bucket imagens>" + --with-files
+ *
  * B) Acesso direto ao banco do Supabase:
  *      SOURCE_DATABASE_URL="postgresql://..." DATABASE_URL="..." npm run migrate:supabase
  *    (para fotos: SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY + --with-files)
@@ -20,6 +24,8 @@
  * - É idempotente: pode ser executado de novo (registros existentes são ignorados).
  * - As tabelas do banco novo precisam existir (o deploy na Vercel já as cria).
  */
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import pg from "pg";
 import { putFile } from "../server/lib/storage.js";
 
@@ -92,6 +98,51 @@ function exportSource(baseUrl: string, secret: string): Source {
           };
         }
         if (rows.length < 200) return;
+      }
+    },
+    async close() {},
+  };
+}
+
+/** Origem C: arquivo JSON gerado a partir do backup do Lovable. */
+async function fileSource(file: string): Promise<Source> {
+  const data = JSON.parse(await readFile(file, "utf8")) as {
+    format: string;
+    tables: Record<string, Row[]>;
+    credentials: { id: string; encrypted_password: string | null; last_sign_in_at: string | null }[];
+    storage_objects: { name: string; owner: string | null; mimetype: string | null; created_at: string }[];
+  };
+  if (data.format !== "engemase-export-v1") throw new Error("Arquivo de importação em formato desconhecido");
+  const filesDir = process.env.FILES_DIR;
+  return {
+    async tableRows(table) {
+      return data.tables[table] ?? [];
+    },
+    async credentials() {
+      return data.credentials;
+    },
+    async *files() {
+      if (!filesDir) throw new Error("--with-files com IMPORT_FILE exige FILES_DIR (pasta com as fotos do bucket imagens)");
+      for (const o of data.storage_objects) {
+        yield {
+          path: o.name,
+          owner: o.owner,
+          mimetype: o.mimetype,
+          created_at: o.created_at,
+          download: async () => {
+            // Aceita a pasta com ou sem o nível "imagens/".
+            const candidates = [path.join(filesDir, o.name), path.join(filesDir, "imagens", o.name)];
+            for (const c of candidates) {
+              try {
+                const buf = await readFile(c);
+                return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+              } catch {
+                // tenta o próximo
+              }
+            }
+            throw new Error("arquivo não encontrado em FILES_DIR");
+          },
+        };
       }
     },
     async close() {},
@@ -214,7 +265,10 @@ async function migrateFiles(source: Source) {
 async function main() {
   if (!TARGET) throw new Error("Defina DATABASE_URL (banco novo, Prisma Postgres).");
   let source: Source;
-  if (process.env.EXPORT_URL) {
+  if (process.env.IMPORT_FILE) {
+    source = await fileSource(process.env.IMPORT_FILE);
+    console.log(`Origem: arquivo ${process.env.IMPORT_FILE}`);
+  } else if (process.env.EXPORT_URL) {
     if (!process.env.EXPORT_SECRET) throw new Error("Defina EXPORT_SECRET (o mesmo cadastrado no Lovable).");
     source = exportSource(process.env.EXPORT_URL, process.env.EXPORT_SECRET);
     console.log("Origem: função de exportação do Lovable Cloud");
@@ -222,7 +276,7 @@ async function main() {
     source = await pgSource(process.env.SOURCE_DATABASE_URL);
     console.log("Origem: conexão direta ao Supabase");
   } else {
-    throw new Error("Defina EXPORT_URL + EXPORT_SECRET (Lovable Cloud) ou SOURCE_DATABASE_URL (Supabase).");
+    throw new Error("Defina IMPORT_FILE, EXPORT_URL + EXPORT_SECRET (Lovable Cloud) ou SOURCE_DATABASE_URL (Supabase).");
   }
   await dst.connect();
 

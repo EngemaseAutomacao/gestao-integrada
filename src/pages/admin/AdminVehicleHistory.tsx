@@ -161,7 +161,7 @@ export default function AdminVehicleHistory() {
   const [kmFixSaving, setKmFixSaving] = useState(false);
 
   const inconsistentEntries = useMemo(
-    () => history.filter((e) => e.km_checkin !== null && e.km_checkin <= e.km_checkout),
+    () => history.filter((e) => e.km_checkin !== null && e.km_checkin < e.km_checkout),
     [history]
   );
 
@@ -639,7 +639,7 @@ export default function AdminVehicleHistory() {
                     <div>
                       <CardTitle className="text-sm md:text-base">Registros com quilometragem inconsistente</CardTitle>
                       <CardDescription className="text-xs">
-                        {inconsistentEntries.length} registro(s) com KM de devolução menor ou igual à KM de saída. Corrija manualmente para reaparecerem nos totais.
+                        {inconsistentEntries.length} registro(s) com KM de devolução menor que a KM de saída. Corrija manualmente para reaparecerem nos totais.
                       </CardDescription>
                     </div>
                   </div>
