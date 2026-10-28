@@ -7,7 +7,7 @@ import { badRequest, conflict, notFound, parseBody, uuid } from "../lib/http.js"
 import { createNotifications, dispatchPushInBackground } from "../lib/notify.js";
 import { categorySchema, passwordSchema, usernameSchema } from "./auth.js";
 
-const roleSchema = z.enum(["admin", "employee", "third_party"], { errorMap: () => ({ message: "Função inválida" }) });
+const roleSchema = z.enum(["admin", "employee", "third_party"], { error: "Função inválida" });
 const emailSchema = z.string().trim().toLowerCase().email("Formato de email inválido").max(255);
 const fullNameSchema = z.string().trim().min(2, "Nome completo deve ter entre 2 e 100 caracteres").max(100);
 

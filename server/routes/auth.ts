@@ -32,7 +32,7 @@ export const usernameSchema = z
   .regex(/^[a-z0-9.]{3,30}$/, "Nome de usuário deve ter 3-30 caracteres (letras minúsculas, números e ponto)");
 
 export const categorySchema = z.enum(["engemase_employee", "third_party", "socios"], {
-  errorMap: () => ({ message: "Categoria inválida" }),
+  error: "Categoria inválida",
 });
 
 /** A troca de senha precisa funcionar mesmo antes da aprovação (primeiro acesso). */
@@ -190,7 +190,7 @@ export const authRoutes = new Hono<{ Variables: AuthVars }>()
       c,
       // Só o que a própria pessoa pode mudar. first_login sai apenas pela troca
       // de senha (senão daria para pular a troca obrigatória após um reset).
-      z.object({ onboarding_completed: z.literal(true).optional() }).strict("Campo não permitido"),
+      z.strictObject({ onboarding_completed: z.literal(true).optional() }, { error: "Campo não permitido" }),
     );
     const updated = await db.profiles.update({ where: { id: user.id }, data: body });
     return c.json({ profile: toPublicProfile(updated) });

@@ -20,6 +20,7 @@
 - Nome do PWA: "Gestão Integrada".
 - Leitura do hodômetro por IA removida; KM inicial digitado na saída (pré-preenchido) e KM final na devolução, com anotação automática de divergências.
 - Botão de notificação de teste no sininho.
+- zod 3 → 4 e react-router-dom 6 → 7 (alertas do npm audit); zod das libs da Vercel forçado à versão corrigida via overrides. `npm audit --omit=dev`: 0 vulnerabilidades.
 - Avisos de atraso verificados a cada 5 min (rota /api/cron/tick) com 1 consulta quando não há nada vencido.
 
 ---

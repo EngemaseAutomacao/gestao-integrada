@@ -32,6 +32,7 @@ export const changelog: ChangelogEntry[] = [
       { type: "fix", text: "O botão \"Instalar app\" volta a aparecer na tela inicial." },
       { type: "security", text: "O manual em PDF passou a exigir login e foi atualizado: não traz mais a lista de usuários nem a senha padrão, e descreve o KM inicial e final." },
       { type: "improvement", text: "Textos da Ajuda e do tour de boas-vindas revisados para refletir o funcionamento atual." },
+      { type: "security", text: "Bibliotecas de validação (zod 4) e de navegação (React Router 7) atualizadas para versões sem vulnerabilidades conhecidas." },
       { type: "security", text: "Reforço de segurança: cabeçalhos de proteção em todas as páginas (CSP, anti-clickjacking, HSTS), limite de tentativas de login por conta, verificação do conteúdo das fotos enviadas e limpeza dos dados guardados no aparelho ao sair." },
       { type: "improvement", text: "Avisos de atraso passam a sair poucos minutos depois do vencimento." },
     ],

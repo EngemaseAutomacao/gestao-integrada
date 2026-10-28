@@ -231,7 +231,7 @@ export default function AdminUsers() {
     const validation = passwordSchema.safeParse(newPassword);
 
     if (!validation.success) {
-      setPasswordError(validation.error.errors[0].message);
+      setPasswordError(validation.error.issues[0].message);
       return;
     }
 
