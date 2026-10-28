@@ -257,6 +257,7 @@ model notifications {
   @@index([user_id, created_at(sort: Desc)])
   @@index([user_id, read])
   @@index([push_sent])
+  @@index([checkout_id, type, created_at])
 }
 
 model push_subscriptions {

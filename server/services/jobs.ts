@@ -150,15 +150,60 @@ export async function runNotificationChecks() {
   return { ...results, push };
 }
 
-const OPPORTUNISTIC_INTERVAL_MS = 10 * 60 * 1000;
+/**
+ * Uma única consulta (= 1 operação no banco) que responde se há algo a fazer:
+ * aviso de atraso/uso prolongado vencido e ainda não enviado nas últimas 24h,
+ * ou push que ficou pendente. Mantém barato verificar com frequência.
+ */
+async function hasDueWork(): Promise<boolean> {
+  const [row] = await db.$queryRaw<{ due: boolean }[]>`
+    SELECT
+      EXISTS (
+        SELECT 1 FROM tool_checkouts c
+        WHERE c.status = 'checked_out' AND c.estimated_return_date < now()
+          AND NOT EXISTS (
+            SELECT 1 FROM notifications n
+            WHERE n.checkout_id = c.id AND n.type IN ('overdue', 'overdue_user_reminder')
+              AND n.created_at > now() - interval '1 day'))
+      OR EXISTS (
+        SELECT 1 FROM vehicle_checkouts c
+        WHERE c.status = 'checked_out' AND c.estimated_return_date < now()
+          AND NOT EXISTS (
+            SELECT 1 FROM notifications n
+            WHERE n.checkout_id = c.id AND n.type = 'vehicle_overdue_return'
+              AND n.created_at > now() - interval '1 day'))
+      OR EXISTS (
+        SELECT 1 FROM vehicle_checkouts c
+        WHERE c.status = 'checked_out' AND c.checkout_date < now() - interval '1 day'
+          AND (c.estimated_return_date IS NULL OR c.estimated_return_date >= now())
+          AND NOT EXISTS (
+            SELECT 1 FROM notifications n
+            WHERE n.checkout_id = c.id AND n.type = 'vehicle_prolonged_use'
+              AND n.created_at > now() - interval '1 day'))
+      OR EXISTS (
+        SELECT 1 FROM notifications
+        WHERE push_sent = false AND created_at < now() - interval '2 minutes')
+      AS due`;
+  return !!row?.due;
+}
+
+/** Intervalo mínimo entre verificações na mesma instância (evita 1 consulta por tela aberta). */
+const LOCAL_THROTTLE_MS = 60 * 1000;
+let lastLocalCheck = 0;
 
 /**
- * No plano Hobby da Vercel o cron só roda 1x por dia. Para os avisos de atraso
- * continuarem saindo ao longo do dia, a verificação também é disparada quando
- * alguém usa o app — no máximo a cada 10 minutos (controlado em sync_state).
+ * Roda os avisos assim que algo vence, sem gastar o plano:
+ * - chamada pelo agendador externo a cada poucos minutos (/api/cron/tick) e
+ *   quando alguém usa o app;
+ * - quando não há nada vencido (quase sempre), custa 1 consulta;
+ * - quando há, uma trava evita rodadas simultâneas.
  */
 export async function runNotificationChecksIfDue() {
-  const cutoff = new Date(Date.now() - OPPORTUNISTIC_INTERVAL_MS);
+  if (Date.now() - lastLocalCheck < LOCAL_THROTTLE_MS) return null;
+  lastLocalCheck = Date.now();
+  if (!(await hasDueWork())) return null;
+
+  const cutoff = new Date(Date.now() - 2 * 60 * 1000);
   // "Reserva" a execução de forma atômica para evitar rodadas simultâneas.
   const claimed = await db.$executeRaw`
     INSERT INTO sync_state (key, last_run_at) VALUES ('check-notifications-lock', now())

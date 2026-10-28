@@ -72,9 +72,13 @@ Sem `BLOB_READ_WRITE_TOKEN`, as fotos ficam em `.data/uploads` localmente.
 | `/api/cron/sheets` | diário 03:10 (Brasília) | Sincroniza ferramentas com a planilha |
 | `/api/cron/cleanup` | diário 03:00 (Brasília) | Política de retenção de dados |
 
-> No plano **Hobby** da Vercel os crons só rodam uma vez por dia. Por isso a verificação de
-> atrasos também é disparada quando alguém usa o app (no máximo a cada 10 minutos).
-> No plano **Pro** dá para mudar o cron de notificações para `*/10 * * * *` no `vercel.json`.
+| `/api/cron/tick` | a cada 5 min (agendador externo) | Verificação rápida: só roda os avisos se algo venceu |
+
+> No plano **Hobby** da Vercel os crons só rodam uma vez por dia. Para os avisos de atraso
+> saírem poucos minutos depois de vencerem, um agendador externo gratuito (ex.: cron-job.org)
+> chama `GET /api/cron/tick?key=<TICK_SECRET>` a cada 5 minutos. Quando não há nada vencido
+> (quase sempre), cada chamada custa uma única consulta leve ao banco (~9 mil/mês, dentro do
+> plano gratuito do Prisma Postgres). O uso do app também dispara a mesma verificação.
 
 ## Migração do sistema antigo
 
