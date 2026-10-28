@@ -7,39 +7,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useEffect } from "react";
 import { api } from "@/lib/api";
 import { useHomePendingCount } from "@/hooks/useHomePendingCount";
+import { useInstallPrompt } from "@/lib/installPrompt";
 
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
-
-function useInstallPrompt(isIOS: boolean) {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-
-  useEffect(() => {
-    if (isIOS) return;
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    };
-    window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, [isIOS]);
-
-  const handleInstall = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const choice = await deferredPrompt.userChoice;
-      if (choice.outcome === "accepted") setDeferredPrompt(null);
-    }
-  };
-
-  return { deferredPrompt, handleInstall };
-}
 
 function InstallPWACard({ isIOS }: { isIOS: boolean }) {
-  const { deferredPrompt, handleInstall } = useInstallPrompt(isIOS);
+  const { canInstall, install: handleInstall } = useInstallPrompt();
 
   if (isIOS) {
     return (
@@ -59,7 +31,7 @@ function InstallPWACard({ isIOS }: { isIOS: boolean }) {
     );
   }
 
-  if (!deferredPrompt) return null;
+  if (!canInstall) return null;
 
   return (
     <Card
@@ -80,10 +52,10 @@ function InstallPWACard({ isIOS }: { isIOS: boolean }) {
 }
 
 function InstallPWAHeroButton({ isIOS }: { isIOS: boolean }) {
-  const { deferredPrompt, handleInstall } = useInstallPrompt(isIOS);
+  const { canInstall, install: handleInstall } = useInstallPrompt();
   const [showIOSHint, setShowIOSHint] = useState(false);
 
-  if (!isIOS && !deferredPrompt) return null;
+  if (!isIOS && !canInstall) return null;
 
   if (isIOS) {
     return (

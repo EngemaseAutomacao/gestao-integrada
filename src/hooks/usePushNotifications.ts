@@ -79,7 +79,6 @@ export function usePushNotifications() {
         await api.post("/push/subscribe", {
           endpoint: subscription!.endpoint,
           keys: { p256dh: json.keys?.p256dh || "", auth: json.keys?.auth || "" },
-          replaceOthers: true,
         });
       }
 
@@ -159,11 +158,10 @@ export function usePushNotifications() {
       const p256dh = subscriptionJson.keys?.p256dh || "";
       const auth = subscriptionJson.keys?.auth || "";
 
-      // Registra a inscrição atual e remove as antigas deste usuário
+      // Registra a inscrição deste aparelho (cada aparelho do usuário tem a sua)
       await api.post("/push/subscribe", {
         endpoint: subscription.endpoint,
         keys: { p256dh, auth },
-        replaceOthers: true,
       });
 
       setIsSubscribed(true);

@@ -155,20 +155,30 @@ export function NotificationBell() {
   /** Envia um push de teste para os aparelhos do próprio usuário (diagnóstico). */
   const sendTestNotification = async () => {
     try {
-      const data = await api.post<{ sentCount: number; subscriptionsCount: number }>("/notifications/test");
+      const data = await api.post<{
+        subscriptionsCount: number;
+        sentCount: number;
+        devices: { device: string; ok: boolean; status: number | null; removed: boolean }[];
+      }>("/notifications/test");
       if (!data.subscriptionsCount) {
         toast.error("Nenhum aparelho com notificações ativadas", {
-          description: "Abra o app no celular e toque em \"Ativar push\" no sininho.",
+          description: "Abra o app no celular, toque no sininho e em \"Ativar push\". Depois teste de novo.",
+          duration: 10000,
         });
-      } else if (!data.sentCount) {
-        toast.error("O envio do push falhou", {
-          description: "Abra o app no celular uma vez para renovar a inscrição e tente de novo.",
-        });
-      } else {
-        toast.success("Notificação de teste enviada!", {
-          description: `Entregue em ${data.sentCount} de ${data.subscriptionsCount} aparelho(s).`,
-        });
+        return;
       }
+      const lines = data.devices.map((d) =>
+        d.ok
+          ? `✅ ${d.device}: entregue`
+          : d.removed
+            ? `⚠️ ${d.device}: inscrição antiga/inválida removida — abra o app nesse aparelho para reativar`
+            : `❌ ${d.device}: falhou (erro ${d.status ?? "de rede"})`,
+      );
+      const show = data.sentCount === data.devices.length ? toast.success : toast.warning;
+      show(`Teste enviado: ${data.sentCount} de ${data.subscriptionsCount} aparelho(s)`, {
+        description: lines.join("\n"),
+        duration: 12000,
+      });
     } catch (error) {
       toast.error("Não foi possível enviar o teste", {
         description: error instanceof Error ? error.message : undefined,

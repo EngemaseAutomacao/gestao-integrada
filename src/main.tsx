@@ -12,9 +12,13 @@ import "@fontsource/dm-sans/700.css";
 import { APP_VERSION } from "./version.ts";
 import { initSentry } from "./lib/sentry";
 import { registerServiceWorker } from "./lib/registerSW";
+import { captureInstallPrompt } from "./lib/installPrompt";
 
 // Inicializa monitoramento de erros (no-op sem VITE_SENTRY_DSN)
 initSentry();
+
+// Guarda o pedido de instalação do PWA antes de qualquer tela carregar
+captureInstallPrompt();
 
 // Registra o SW (gerado pelo vite-plugin-pwa em /sw.js) — só fora de preview/dev
 registerServiceWorker();

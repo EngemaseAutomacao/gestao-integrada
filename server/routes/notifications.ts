@@ -5,7 +5,7 @@ import { logAction } from "../lib/audit.js";
 import { db } from "../lib/db.js";
 import { badRequest, parseBody, uuid } from "../lib/http.js";
 import { createNotifications, dispatchPendingPush } from "../lib/notify.js";
-import { isAllowedPushEndpoint } from "../lib/push.js";
+import { isAllowedPushEndpoint, sendPushToUserDetailed } from "../lib/push.js";
 import { enforceRateLimit } from "../lib/rateLimit.js";
 
 export const notificationRoutes = new Hono<{ Variables: AuthVars }>()
@@ -42,17 +42,19 @@ export const notificationRoutes = new Hono<{ Variables: AuthVars }>()
   .post("/test", async (c) => {
     const user = c.get("user");
     await enforceRateLimit(`notif-test:${user.id}`, 5, 60);
-    await createNotifications([
-      {
-        user_id: user.id,
-        type: "test",
-        title: "🔔 Notificação de Teste",
-        message: "Esta é uma notificação de teste para verificar se o sistema está funcionando corretamente.",
-      },
-    ]);
-    const subscriptionsCount = await db.push_subscriptions.count({ where: { user_id: user.id } });
-    const { pushed } = await dispatchPendingPush();
-    return c.json({ success: true, subscriptionsCount, sentCount: pushed });
+    const title = "🔔 Notificação de Teste";
+    const message = "Esta é uma notificação de teste para verificar se o sistema está funcionando corretamente.";
+    // Já grava como enviada: o push sai abaixo, com o resultado de cada aparelho.
+    await db.notifications.create({
+      data: { user_id: user.id, type: "test", title, message, read: false, push_sent: true },
+    });
+    const devices = await sendPushToUserDetailed(user.id, { title, body: message, tag: `test-${Date.now()}` });
+    return c.json({
+      success: true,
+      subscriptionsCount: devices.length,
+      sentCount: devices.filter((d) => d.ok).length,
+      devices,
+    });
   })
 
   /** Envio manual pelo admin para um ou vários usuários. */
@@ -104,13 +106,10 @@ export const pushRoutes = new Hono<{ Variables: AuthVars }>()
       z.object({
         endpoint: z.string().url().max(2000),
         keys: z.object({ p256dh: z.string().min(1).max(500), auth: z.string().min(1).max(200) }),
-        replaceOthers: z.boolean().optional(),
       }),
     );
     if (!isAllowedPushEndpoint(body.endpoint)) throw badRequest("Serviço de push não suportado");
-    if (body.replaceOthers) {
-      await db.push_subscriptions.deleteMany({ where: { user_id: user.id, NOT: { endpoint: body.endpoint } } });
-    }
+    // Cada aparelho mantém a sua inscrição; as inválidas são removidas no envio.
     await db.push_subscriptions.upsert({
       where: { user_id_endpoint: { user_id: user.id, endpoint: body.endpoint } },
       create: { user_id: user.id, endpoint: body.endpoint, p256dh: body.keys.p256dh, auth: body.keys.auth },
