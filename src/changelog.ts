@@ -22,6 +22,9 @@ export const changelog: ChangelogEntry[] = [
       { type: "fix", text: "O cache offline do app passa a ter tamanho limitado, sem ocupar cada vez mais espaço no celular." },
       { type: "security", text: "Telas de administração só abrem para administradores (antes a tela carregava e o servidor bloqueava os dados)." },
       { type: "improvement", text: "Remoção de código, pacotes e arquivos sem uso herdados do Lovable." },
+      { type: "fix", text: "Notificações no celular voltam a funcionar; aparelhos que já tinham ativado são reinscritos automaticamente." },
+      { type: "fix", text: "Sincronização de obras (Trello) e de ferramentas (planilha) configurada no novo servidor." },
+      { type: "improvement", text: "O app instalado passa a se chamar apenas \"Gestão Integrada\"." },
     ],
   },
   {

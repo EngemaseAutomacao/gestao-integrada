@@ -11,6 +11,13 @@
 - Ícone da tela inicial apontava para o CDN do Lovable.
 - Cache dinâmico do service worker sem limite de tamanho.
 - Telas de administração montavam para não administradores (agora há um guard de rota).
+- Push: inscrições feitas com a chave VAPID antiga são refeitas automaticamente.
+- Sincronização com Trello e Google Sheets configurada na Vercel.
+- Checagem de tipos da Vercel usava o tsconfig raiz sem strictNullChecks.
+- Aviso de sslmode do driver pg em todas as requisições.
+
+### Alterado (cont.)
+- Nome do PWA: "Gestão Integrada".
 
 ---
 
