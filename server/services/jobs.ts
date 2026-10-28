@@ -149,3 +149,21 @@ export async function runNotificationChecks() {
   });
   return { ...results, push };
 }
+
+const OPPORTUNISTIC_INTERVAL_MS = 10 * 60 * 1000;
+
+/**
+ * No plano Hobby da Vercel o cron só roda 1x por dia. Para os avisos de atraso
+ * continuarem saindo ao longo do dia, a verificação também é disparada quando
+ * alguém usa o app — no máximo a cada 10 minutos (controlado em sync_state).
+ */
+export async function runNotificationChecksIfDue() {
+  const cutoff = new Date(Date.now() - OPPORTUNISTIC_INTERVAL_MS);
+  // "Reserva" a execução de forma atômica para evitar rodadas simultâneas.
+  const claimed = await db.$executeRaw`
+    INSERT INTO sync_state (key, last_run_at) VALUES ('check-notifications-lock', now())
+    ON CONFLICT (key) DO UPDATE SET last_run_at = now()
+    WHERE sync_state.last_run_at < ${cutoff}`;
+  if (claimed === 0) return null;
+  return runNotificationChecks();
+}

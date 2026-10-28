@@ -5,6 +5,8 @@ import { logAction } from "../lib/audit.js";
 import { db, type Prisma } from "../lib/db.js";
 import { notFound, optionalText, parseBody, parseQuery, uuid } from "../lib/http.js";
 import { runCleanup } from "../services/cleanup.js";
+import { runNotificationChecksIfDue } from "../services/jobs.js";
+import { runInBackground } from "../lib/notify.js";
 import { syncGoogleSheets } from "../services/syncSheets.js";
 import { syncTrello } from "../services/syncTrello.js";
 import { dateRange } from "./shared.js";
@@ -106,6 +108,8 @@ export const statsRoutes = new Hono<{ Variables: AuthVars }>()
   /** Contadores do próprio usuário (home, badges). */
   .get("/me", async (c) => {
     const user = c.get("user");
+    // Mantém os avisos de atraso em dia mesmo com o cron diário do plano Hobby.
+    runInBackground(runNotificationChecksIfDue());
     const now = new Date();
     const [toolsInUse, toolsOverdue, vehiclesOut, unread] = await Promise.all([
       db.tool_checkouts.count({ where: { user_id: user.id, status: "checked_out" } }),

@@ -66,14 +66,14 @@ Sem `BLOB_READ_WRITE_TOKEN`, as fotos ficam em `.data/uploads` localmente.
 
 | Rota | Quando | O quê |
 |---|---|---|
-| `/api/cron/notifications` | a cada 10 min | Avisos de atraso e uso prolongado + reenvio de push |
+| `/api/cron/notifications` | diário 08:00 (Brasília) | Avisos de atraso e uso prolongado + reenvio de push |
 | `/api/cron/trello` | diário 03:00 (Brasília) | Sincroniza obras com o Trello |
 | `/api/cron/sheets` | diário 03:10 (Brasília) | Sincroniza ferramentas com a planilha |
 | `/api/cron/cleanup` | diário 03:00 (Brasília) | Política de retenção de dados |
 
-> No plano **Hobby** da Vercel, os crons só podem rodar uma vez por dia. Para manter os
-> avisos de atraso a cada 10 minutos é preciso o plano **Pro**. Outra opção é mudar o
-> horário em `vercel.json` para diário.
+> No plano **Hobby** da Vercel os crons só rodam uma vez por dia. Por isso a verificação de
+> atrasos também é disparada quando alguém usa o app (no máximo a cada 10 minutos).
+> No plano **Pro** dá para mudar o cron de notificações para `*/10 * * * *` no `vercel.json`.
 
 ## Migração dos dados do Supabase
 
