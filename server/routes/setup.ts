@@ -114,23 +114,34 @@ export const setupRoutes = new Hono()
 
   /**
    * TEMPORÁRIO: comprime as fotos importadas antes da compressão no app
-   * (estouraram o 1 GB do Blob). Chamar repetidamente até remaining = 0.
+   * (estouraram o 1 GB do Blob). Como o Blob recusa gravações acima da cota,
+   * roda em duas fases sem risco de perda:
+   *  1. guarda a versão comprimida no banco e só então apaga a original;
+   *  2. com espaço livre, grava as comprimidas de volta no Blob.
+   * Chamar repetidamente até phase = "done".
    */
   .get("/compress-photos", async (c) => {
     requireImportSecret(c.req.query("token"));
     const started = Date.now();
-    const big = await db.uploaded_files.findMany({
-      where: { size: { gt: 600 * 1024 }, content_type: "image/jpeg" },
-      orderBy: { size: "desc" },
-      select: { path: true, size: true },
-    });
-    let done = 0;
-    let saved = 0;
+    const timeLeft = () => Date.now() - started < 45_000;
+    await db.$executeRawUnsafe(
+      `CREATE TABLE IF NOT EXISTS photo_compress_tmp (path text PRIMARY KEY, data bytea NOT NULL)`,
+    );
     const failed: string[] = [];
-    for (const f of big) {
-      if (Date.now() - started > 45_000) break;
+    let stashed = 0;
+    let restored = 0;
+
+    // Fase 1: comprime e guarda no banco; só depois apaga a original do Blob.
+    const pending = await db.$queryRawUnsafe<{ path: string }[]>(
+      `SELECT f.path FROM uploaded_files f
+        WHERE f.size > 614400 AND f.content_type = 'image/jpeg'
+          AND NOT EXISTS (SELECT 1 FROM photo_compress_tmp t WHERE t.path = f.path)
+        ORDER BY f.size DESC`,
+    );
+    for (const { path } of pending) {
+      if (!timeLeft()) break;
       try {
-        const file = await getFile(f.path);
+        const file = await getFile(path);
         if (!file) throw new Error("não encontrada no Blob");
         const original = Buffer.isBuffer(file.body)
           ? file.body
@@ -141,25 +152,49 @@ export const setupRoutes = new Hono()
           .jpeg({ quality: 75, mozjpeg: true })
           .toBuffer();
         if (small.length >= original.length) {
-          await db.uploaded_files.update({ where: { path: f.path }, data: { size: original.length } });
+          await db.uploaded_files.update({ where: { path }, data: { size: original.length } });
           continue;
         }
-        await deleteFiles([f.path]);
-        try {
-          await putFile(f.path, small, "image/jpeg");
-        } catch (err) {
-          await putFile(f.path, original, "image/jpeg");
-          throw err;
-        }
-        await db.uploaded_files.update({ where: { path: f.path }, data: { size: small.length } });
-        done++;
-        saved += original.length - small.length;
+        await db.$executeRawUnsafe(
+          `INSERT INTO photo_compress_tmp (path, data) VALUES ($1, $2) ON CONFLICT (path) DO UPDATE SET data = EXCLUDED.data`,
+          path,
+          small,
+        );
+        await deleteFiles([path]);
+        stashed++;
       } catch (err) {
-        failed.push(`${f.path}: ${err instanceof Error ? err.message : String(err)}`);
+        failed.push(`${path}: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
-    const remaining = await db.uploaded_files.count({
-      where: { size: { gt: 600 * 1024 }, content_type: "image/jpeg" },
+
+    // Fase 2: depois que todas as originais grandes saíram, grava as comprimidas.
+    const left = pending.length - stashed - failed.length;
+    if (left <= 0 && timeLeft()) {
+      const rows = await db.$queryRawUnsafe<{ path: string }[]>(`SELECT path FROM photo_compress_tmp`);
+      for (const { path } of rows) {
+        if (!timeLeft()) break;
+        try {
+          const [row] = await db.$queryRawUnsafe<{ data: Buffer }[]>(
+            `SELECT data FROM photo_compress_tmp WHERE path = $1`,
+            path,
+          );
+          const data = Buffer.from(row.data);
+          await putFile(path, data, "image/jpeg");
+          await db.uploaded_files.update({ where: { path }, data: { size: data.length } });
+          await db.$executeRawUnsafe(`DELETE FROM photo_compress_tmp WHERE path = $1`, path);
+          restored++;
+        } catch (err) {
+          failed.push(`${path}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+    }
+
+    const [{ count: waiting }] = await db.$queryRawUnsafe<{ count: bigint }[]>(
+      `SELECT count(*) FROM photo_compress_tmp`,
+    );
+    const remainingBig = await db.uploaded_files.count({
+      where: { size: { gt: 614400 }, content_type: "image/jpeg" },
     });
-    return c.json({ done, savedMB: Math.round(saved / 1048576), remaining, failed });
+    const phase = Number(waiting) === 0 && remainingBig - failed.length <= 0 ? "done" : "running";
+    return c.json({ phase, stashed, restored, waiting: Number(waiting), remainingBig, failed });
   });
