@@ -8,7 +8,7 @@
     "dev:web": "vite",
     "dev:api": "tsx watch --env-file-if-exists=.env server/dev.ts",
     "build": "prisma generate && vite build",
-    "vercel-build": "prisma generate && prisma migrate deploy && vite build",
+    "vercel-build": "node scripts/vercel-build.mjs",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.server.json --noEmit",
