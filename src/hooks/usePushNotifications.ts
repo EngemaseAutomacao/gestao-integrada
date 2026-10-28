@@ -64,8 +64,25 @@ export function usePushNotifications() {
     
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await getPushManager(registration).getSubscription();
-      
+      let subscription: PushSubscription | null = await getPushManager(registration).getSubscription();
+
+      // Inscrição feita com a chave VAPID antiga (sistema Lovable) não recebe mais push:
+      // se a permissão já foi dada, refaz a inscrição em silêncio com a chave atual.
+      const vapidKey = await getVapidPublicKey();
+      if (subscription && !sameKey(subscription, vapidKey) && Notification.permission === "granted") {
+        await subscription.unsubscribe();
+        subscription = await getPushManager(registration).subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        });
+        const json = subscription!.toJSON();
+        await api.post("/push/subscribe", {
+          endpoint: subscription!.endpoint,
+          keys: { p256dh: json.keys?.p256dh || "", auth: json.keys?.auth || "" },
+          replaceOthers: true,
+        });
+      }
+
       if (subscription) {
         // Verifica se a inscrição está registrada no servidor
         const { subscribed } = await api.get<{ subscribed: boolean }>("/push/status", {
