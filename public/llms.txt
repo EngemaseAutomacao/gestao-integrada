@@ -1,9 +1,0 @@
-# Gestão Integrada Engemase
-
-> Sistema interno de gestão de ativos da Engemase Engenharia: controle de ferramentas, veículos, ponto, materiais e obras.
-
-Aplicativo de uso restrito a colaboradores e terceiros autorizados. A maioria das rotas exige autenticação.
-
-## Pages
-
-- [Login](/auth): Acesso de colaboradores e terceiros autorizados.

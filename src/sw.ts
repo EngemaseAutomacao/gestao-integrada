@@ -139,7 +139,7 @@ self.addEventListener("fetch", (event) => {
         .then((response) => {
           if (response && response.status === 200) {
             const clone = response.clone();
-            caches.open(DYNAMIC_CACHE).then((cache) => cache.put(event.request, clone));
+            caches.open(DYNAMIC_CACHE).then((cache) => cache.put(event.request, clone)).then(() => limitCacheSize(DYNAMIC_CACHE, MAX_CACHE_SIZE));
           }
           return response;
         })
@@ -159,7 +159,7 @@ self.addEventListener("fetch", (event) => {
         .then((response) => {
           if (response && response.status === 200) {
             const clone = response.clone();
-            caches.open(DYNAMIC_CACHE).then((cache) => cache.put(event.request, clone));
+            caches.open(DYNAMIC_CACHE).then((cache) => cache.put(event.request, clone)).then(() => limitCacheSize(DYNAMIC_CACHE, MAX_CACHE_SIZE));
           }
           return response;
         })
@@ -174,7 +174,7 @@ self.addEventListener("fetch", (event) => {
       return fetch(event.request).then((response) => {
         if (!response || response.status !== 200 || response.type === "error") return response;
         const clone = response.clone();
-        caches.open(DYNAMIC_CACHE).then((cache) => cache.put(event.request, clone));
+        caches.open(DYNAMIC_CACHE).then((cache) => cache.put(event.request, clone)).then(() => limitCacheSize(DYNAMIC_CACHE, MAX_CACHE_SIZE));
         return response;
       });
     })

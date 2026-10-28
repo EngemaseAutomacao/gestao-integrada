@@ -14,19 +14,11 @@ export function initSentry(): void {
   const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
   if (!dsn) return;
 
-  // Não enviar erros do preview do editor Lovable
-  const host = window.location.hostname;
-  const isPreview =
-    host.endsWith("lovableproject.com") ||
-    host.endsWith("lovableproject-dev.com") ||
-    host.startsWith("id-preview--") ||
-    host.startsWith("preview--");
-
   try {
     Sentry.init({
       dsn,
       release: `engemase@${APP_VERSION}`,
-      environment: isPreview ? "preview" : "production",
+      environment: __DEPLOY_ENV__,
       tracesSampleRate: 0.1,
       replaysSessionSampleRate: 0,
       replaysOnErrorSampleRate: 0.1,

@@ -6,19 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Eye, Camera, FileSignature, FileText, FileSpreadsheet, Trash2, X, List, Clock, ChevronDown, ChevronRight, SlidersHorizontal, Pencil, ChevronLeft, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Search, Eye, FileText, FileSpreadsheet, Trash2, X, List, Clock, ChevronDown, ChevronRight, SlidersHorizontal, Pencil, ChevronLeft, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AssetTimeline } from "@/components/admin/AssetTimeline";
-import { SignedImage } from "@/components/SignedImage";
 import { exportToPDF, exportToExcel } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import { format, isAfter, isBefore, startOfDay, endOfDay, subDays, subMonths } from "date-fns";
@@ -227,11 +224,6 @@ export default function AdminHistory() {
   const isOverdue = (estimatedReturnDate: string | null, status: string) => {
     if (!estimatedReturnDate || status !== "checked_out") return false;
     return new Date(estimatedReturnDate) < new Date();
-  };
-
-  const hasMedia = (entry: HistoryEntry) => {
-    return entry.checkout_photo_url || entry.checkin_photo_url || 
-           entry.checkout_signature_url || entry.checkin_signature_url;
   };
 
   const exportHistoryPDF = async () => {

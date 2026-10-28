@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { useOffline } from "@/contexts/OfflineContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { 
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger 
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger
 } from "@/components/ui/sheet";
-import { 
-  RefreshCw, Clock, CheckCircle2, XCircle, Loader2, 
-  Wrench, Car, AlertTriangle, LogIn, LogOut, ChevronRight 
+import {
+  RefreshCw, Clock, Loader2,
+  Wrench, Car, LogIn, LogOut, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";

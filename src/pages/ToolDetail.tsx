@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Package, History, Calendar, MapPin, Clock } from "lucide-react";
@@ -40,26 +38,9 @@ interface CheckoutRecord {
   } | null;
 }
 
-const conditionLabels: Record<string, string> = {
-  excellent: "Excelente",
-  good: "Bom",
-  fair: "Regular",
-  poor: "Ruim",
-  needs_maintenance: "Precisa Manutenção",
-};
-
-const conditionColors: Record<string, string> = {
-  excellent: "bg-success",
-  good: "bg-primary",
-  fair: "bg-warning",
-  poor: "bg-warning",
-  needs_maintenance: "bg-destructive",
-};
-
 
 export default function ToolDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [tool, setTool] = useState<Tool | null>(null);
   
   const [checkouts, setCheckouts] = useState<CheckoutRecord[]>([]);

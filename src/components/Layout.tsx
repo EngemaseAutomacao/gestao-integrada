@@ -1,29 +1,23 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate, useLocation, NavLink, useNavigate } from "react-router-dom";
-import { Search } from "lucide-react";
-import { 
-  Home, 
-  Package, 
-  History, 
-  Users, 
-  Settings, 
-  LogOut, 
-  Wrench, 
-  ClipboardList, 
-  BarChart3, 
-  Bell, 
-  FileText, 
-  AlertCircle, 
-  Car, 
+import {
+  Package,
+  History,
+  Users,
+  Settings,
+  LogOut,
+  Wrench,
+  ClipboardList,
+  BarChart3,
+  Bell,
+  FileText,
+  AlertCircle,
+  Car,
   ChevronDown,
-  ArrowLeft,
-  Fuel,
-  MapPin,
-  HelpCircle,
+  ArrowLeft, HelpCircle,
   KeyRound,
   LogIn,
-  Upload,
-  ArrowRightLeft
+  Upload
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -51,13 +45,9 @@ import engemaseLogo from "@/assets/engemase-logo.png";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { LogoutConfirmDialog } from "@/components/LogoutConfirmDialog";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { useState, useEffect, Suspense } from "react";
 import { DashboardSkeleton as PageSkeleton } from "@/components/PageSkeleton";
 import { prefetchMainRoutes } from "@/lib/prefetchRoutes";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/AppSidebar";
 
 // Route-to-title mapping as module-level constant (avoids re-creation on every render)
 const routeTitleMap: Record<string, { title: string; icon: typeof Wrench }> = {
@@ -206,11 +196,6 @@ export default function Layout({ children }: LayoutProps) {
   };
 
   const currentModule = getCurrentModuleInfo();
-
-  const isActiveRoute = (url: string) => {
-    if (url === "/") return location.pathname === "/";
-    return location.pathname === url || location.pathname.startsWith(url + "/");
-  };
 
   // Hide splash screen when auth is done loading (respect min display time)
   if (!loading) {

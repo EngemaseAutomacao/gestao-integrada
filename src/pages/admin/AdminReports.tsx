@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FileText, Download, Loader2, FileSpreadsheet, Calendar } from "lucide-react";
+import { FileText, Loader2, FileSpreadsheet, Calendar } from "lucide-react";
 import { format, subDays, subMonths, startOfMonth, endOfMonth, startOfYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { exportToPDF as exportPdfUtil, exportToExcel as exportXlsxUtil } from "@/lib/exportUtils";
@@ -104,11 +104,12 @@ export default function AdminReports() {
         start = format(startOfMonth(today), "yyyy-MM-dd");
         end = format(endOfMonth(today), "yyyy-MM-dd");
         break;
-      case "last_month":
+      case "last_month": {
         const lastMonth = subMonths(today, 1);
         start = format(startOfMonth(lastMonth), "yyyy-MM-dd");
         end = format(endOfMonth(lastMonth), "yyyy-MM-dd");
         break;
+      }
       case "this_year":
         start = format(startOfYear(today), "yyyy-MM-dd");
         break;
@@ -155,7 +156,7 @@ export default function AdminReports() {
           ]);
           break;
 
-        case "usage_summary":
+        case "usage_summary": {
           data = await fetchReportData();
           title = "Resumo de Uso de Ferramentas";
           const toolUsage = new Map();
@@ -182,6 +183,7 @@ export default function AdminReports() {
             (usage.totalDays / usage.count).toFixed(1),
           ]);
           break;
+        }
 
         case "vehicle_checkouts":
           data = await fetchVehicleCheckoutsData();
@@ -304,7 +306,7 @@ export default function AdminReports() {
           }));
           break;
 
-        case "usage_summary":
+        case "usage_summary": {
           data = await fetchReportData();
           sheetName = "Resumo de Uso";
           const toolUsage = new Map();
@@ -330,6 +332,7 @@ export default function AdminReports() {
             "Média de Dias por Uso": (usage.totalDays / usage.count).toFixed(1),
           }));
           break;
+        }
 
         case "vehicle_checkouts":
           data = await fetchVehicleCheckoutsData();

@@ -79,7 +79,6 @@ export default function Auth() {
               alt="Engemase Engenharia"
               width={672}
               height={294}
-              fetchPriority="high"
               decoding="async"
               className="w-full h-auto"
             />

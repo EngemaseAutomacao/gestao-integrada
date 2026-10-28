@@ -11,6 +11,20 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.0.1",
+    date: "2026-10-28",
+    title: "Fotos mais leves e correções",
+    description: "Revisão geral após a migração: fotos comprimidas, telas de administração protegidas e limpeza de código antigo.",
+    changes: [
+      { type: "improvement", text: "As fotos são reduzidas no aparelho antes do envio (de 3-5 MB para algumas centenas de KB): envio mais rápido e sem erro de foto grande demais." },
+      { type: "fix", text: "A tela de Usuários (Admin) não abria em alguns casos." },
+      { type: "fix", text: "O ícone da Engemase na tela inicial voltou a aparecer." },
+      { type: "fix", text: "O cache offline do app passa a ter tamanho limitado, sem ocupar cada vez mais espaço no celular." },
+      { type: "security", text: "Telas de administração só abrem para administradores (antes a tela carregava e o servidor bloqueava os dados)." },
+      { type: "improvement", text: "Remoção de código, pacotes e arquivos sem uso herdados do Lovable." },
+    ],
+  },
+  {
     version: "3.0.0",
     date: "2026-10-28",
     title: "Nova infraestrutura (Vercel + Prisma Postgres)",

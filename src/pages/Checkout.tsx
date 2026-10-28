@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOffline } from "@/contexts/OfflineContext";
 import { useOfflineStorage } from "@/hooks/useOfflineStorage";
 import { useActiveConstructionSites } from "@/hooks/useConstructionSites";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ModuleHero } from "@/components/ModuleHero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,11 +16,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { ConstructionSiteAutocomplete } from "@/components/ConstructionSiteAutocomplete";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, CheckCircle, CheckSquare, X } from "lucide-react";
-import { PhotoCapture } from "@/components/PhotoCapture";
+import { Loader2, CheckSquare, X } from "lucide-react";
 import { vibrate, VibrationPatterns, shareContent, scheduleLocalReminder } from "@/lib/pwa";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 interface Tool {

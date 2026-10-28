@@ -28,9 +28,10 @@ function versionJsonPlugin() {
 export default defineConfig(() => ({
   define: {
     __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
+    // "production" | "preview" na Vercel; "development" localmente.
+    __DEPLOY_ENV__: JSON.stringify(process.env.VERCEL_ENV || "development"),
   },
   server: {
-    host: "::",
     port: 8080,
     // Em desenvolvimento a API roda separada (npm run dev:api) na porta 3001.
     proxy: {

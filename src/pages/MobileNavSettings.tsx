@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useMobileNavConfig, ALL_TAB_OPTIONS, NavTabItem } from "@/hooks/useMobileNavConfig";
+import { useMobileNavConfig, ALL_TAB_OPTIONS } from "@/hooks/useMobileNavConfig";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Check, RotateCcw, ArrowLeft } from "lucide-react";

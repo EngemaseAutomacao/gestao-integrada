@@ -85,18 +85,6 @@ export async function deletePhotosByOperation(operationId: string): Promise<void
   });
 }
 
-export async function getAllPendingPhotos(): Promise<OfflinePhoto[]> {
-  const db = await openDB();
-  const tx = db.transaction(STORE_NAME, "readonly");
-  const store = tx.objectStore(STORE_NAME);
-
-  return new Promise((resolve, reject) => {
-    const request = store.getAll();
-    request.onsuccess = () => { db.close(); resolve(request.result); };
-    request.onerror = () => { db.close(); reject(request.error); };
-  });
-}
-
 export async function clearAllOfflinePhotos(): Promise<void> {
   const db = await openDB();
   const tx = db.transaction(STORE_NAME, "readwrite");

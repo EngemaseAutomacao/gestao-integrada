@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Bell, Volume2, VolumeX } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,9 +27,7 @@ interface Notification {
 }
 
 export function NotificationBell() {
-  const { user, profile } = useAuth();
-  const navigate = useNavigate();
-  const isAdmin = profile?.role === "admin";
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -39,7 +36,7 @@ export function NotificationBell() {
   });
   
   const { playNotificationSound } = useNotificationSound();
-  const { permission, isSupported, isSubscribed, subscribe, unsubscribe, requestPermission } = usePushNotifications();
+  const { permission, isSupported, isSubscribed, subscribe } = usePushNotifications();
   const previousNotificationIds = useRef<Set<string>>(new Set());
   const isInitialLoad = useRef(true);
 
@@ -152,42 +149,6 @@ export function NotificationBell() {
       toast.success("Notificações push ativadas e registradas!");
     } else {
       toast.error("Erro ao ativar notificações push. Verifique a permissão do navegador.");
-    }
-  };
-
-  const sendTestNotification = async () => {
-    if (!user) return;
-
-    try {
-      const data = await api.post<{ sentCount: number; subscriptionsCount: number }>("/notifications/test");
-
-      setOpen(false);
-
-      const sentCount = data?.sentCount || 0;
-      const subscriptionsCount = data?.subscriptionsCount || 0;
-
-      if (subscriptionsCount === 0) {
-        toast.error("Nenhum dispositivo inscrito para push", {
-          description: "Ative as notificações push neste aparelho para validar o envio.",
-        });
-        return;
-      }
-
-      if (sentCount === 0) {
-        toast.error("Push não foi entregue", {
-          description: "A notificação foi salva, mas o push falhou em todos os dispositivos inscritos.",
-        });
-        return;
-      }
-
-      toast.success("Notificação de teste enviada!", {
-        description: `Push entregue em ${sentCount} de ${subscriptionsCount} dispositivo(s).`,
-      });
-    } catch (error: any) {
-      console.error("Error sending test notification:", error);
-      toast.error("Erro ao enviar notificação de teste", {
-        description: error.message || "Não foi possível validar o push agora.",
-      });
     }
   };
 

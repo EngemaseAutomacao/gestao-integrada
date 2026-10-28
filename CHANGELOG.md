@@ -1,3 +1,19 @@
+# Notas de Atualização - v3.0.1
+
+## [3.0.1] - 2026-10-28
+
+### Alterado
+- Fotos comprimidas no aparelho antes do envio (lado maior 1600 px, JPEG 75%).
+- Removidos código, componentes, pacotes e arquivos sem uso herdados do Lovable.
+
+### Corrigido
+- Tela de Usuários (Admin) quebrava ("Cannot access 'loadUsers' before initialization").
+- Ícone da tela inicial apontava para o CDN do Lovable.
+- Cache dinâmico do service worker sem limite de tamanho.
+- Telas de administração montavam para não administradores (agora há um guard de rota).
+
+---
+
 # Notas de Atualização - v3.0.0
 
 ## [3.0.0] - 2026-10-28

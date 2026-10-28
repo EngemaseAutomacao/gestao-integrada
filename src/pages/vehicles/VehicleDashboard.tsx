@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Car, ArrowRight, ChevronDown, Search, FileText, FileSpreadsheet, Filter, X, Cog, Plug, PlugZap } from "lucide-react";
+import { Car, ArrowRight, ChevronDown, Search, FileText, FileSpreadsheet, Filter, X, Plug, PlugZap } from "lucide-react";
 import { ModuleHero } from "@/components/ModuleHero";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

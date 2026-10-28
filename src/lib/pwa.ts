@@ -20,10 +20,6 @@ export async function setAppBadge(count: number): Promise<void> {
   }
 }
 
-export async function clearAppBadge(): Promise<void> {
-  return setAppBadge(0);
-}
-
 // ===== Vibration API =====
 export function vibrate(pattern: number | number[] = 30): void {
   try {

@@ -1,14 +1,6 @@
 import { api } from "@/lib/api";
 import { shrinkPhoto } from "@/lib/imageCompression";
 
-/**
- * Convert a base64 data URL to a Blob
- */
-export const dataUrlToBlob = (dataUrl: string, mimeType: string): Blob => {
-  const byteArray = Uint8Array.from(atob(dataUrl.split(",")[1]), c => c.charCodeAt(0));
-  return new Blob([byteArray], { type: mimeType });
-};
-
 type Module = "ferramentas" | "veiculos";
 type Direction = "saidas" | "entradas" | "problemas";
 
@@ -26,41 +18,6 @@ const uploadBlob = async (
   if (opts.assetName) form.append("asset_name", opts.assetName);
   const { path } = await api.post<{ path: string }>("/files", form);
   return path;
-};
-
-/**
- * Upload an image (from data URL)
- * Used for tool checkout/checkin photos and signatures
- */
-export const uploadDataUrlImage = async (
-  dataUrl: string,
-  type: "photo" | "signature",
-  module: Module,
-  direction: Direction
-): Promise<string | null> => {
-  try {
-    const mimeType = type === "photo" ? "image/jpeg" : "image/png";
-    const ext = type === "photo" ? "jpg" : "png";
-    const raw = dataUrlToBlob(dataUrl, mimeType);
-    const blob = type === "photo" ? await shrinkPhoto(raw) : raw;
-    return await uploadBlob(blob, `${type}.${ext}`, { module, direction, prefix: type });
-  } catch (error) {
-    console.error(`Error uploading ${type}:`, error);
-    return null;
-  }
-};
-
-/**
- * Slugify a name for safe filename usage (lowercase, no accents, no spaces).
- */
-export const slugifyForFile = (input: string): string => {
-  return (input || "veiculo")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40) || "veiculo";
 };
 
 /**

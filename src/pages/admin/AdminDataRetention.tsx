@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { Database, Trash2, Save, Loader2, Image, Clock, FileText, Bell, RefreshCw } from "lucide-react";
+import { Database, Trash2, Save, Loader2, Image, Clock, FileText, Bell } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface RetentionSetting {
@@ -48,18 +48,6 @@ export default function AdminDataRetention() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [runningCleanup, setRunningCleanup] = useState(false);
-
-  // Limpeza automática agendada todo dia às 03:00 (horário do servidor)
-  const { daysUntilNextCleanup, nextCleanupLabel } = (() => {
-    const now = new Date();
-    const next = new Date(now);
-    next.setHours(3, 0, 0, 0);
-    if (next <= now) next.setDate(next.getDate() + 1);
-    const diffMs = next.getTime() - now.getTime();
-    const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-    const label = `${next.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })} às 03:00`;
-    return { daysUntilNextCleanup: days, nextCleanupLabel: label };
-  })();
 
   useEffect(() => {
     fetchSettings();

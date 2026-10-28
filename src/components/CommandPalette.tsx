@@ -16,15 +16,11 @@ import {
   History,
   ClipboardList,
   Settings,
-  Bell,
-  MapPin,
-  Package,
+  Bell, Package,
   Upload,
   LogIn,
   AlertCircle,
-  FileText,
-  Fuel,
-  BarChart3,
+  FileText, BarChart3
 } from "lucide-react";
 import { searchAll } from "@/lib/search";
 import { useNavigate } from "react-router-dom";

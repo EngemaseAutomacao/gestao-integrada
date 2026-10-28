@@ -265,28 +265,6 @@ export default function AdminConstructionSites() {
     tool.brand?.toLowerCase().includes(toolSearch.toLowerCase())
   );
 
-  const getConditionLabel = (condition: string) => {
-    const map: Record<string, string> = {
-      excellent: "Excelente",
-      good: "Bom",
-      fair: "Regular",
-      poor: "Ruim",
-      needs_maintenance: "Manutenção",
-    };
-    return map[condition] || condition;
-  };
-
-  const getConditionClass = (condition: string) => {
-    const map: Record<string, string> = {
-      excellent: "bg-success text-success-foreground",
-      good: "bg-primary text-primary-foreground",
-      fair: "bg-warning text-warning-foreground",
-      poor: "bg-warning text-warning-foreground",
-      needs_maintenance: "bg-destructive text-destructive-foreground",
-    };
-    return map[condition] || "bg-destructive text-destructive-foreground";
-  };
-
   // Guarda de acesso depois de todos os hooks (regra dos hooks do React).
   if (!profile || profile.role !== "admin") {
     return <Navigate to="/" />;

@@ -1,24 +1,22 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOffline } from "@/contexts/OfflineContext";
 import { useOfflineStorage } from "@/hooks/useOfflineStorage";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ModuleHero } from "@/components/ModuleHero";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { vibrate, VibrationPatterns, shareContent } from "@/lib/pwa";
-import { ArrowLeft, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
 
 
-import { PhotoCapture } from "@/components/PhotoCapture";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 interface Checkout {
@@ -46,7 +44,6 @@ export default function Checkin() {
   const navigate = useNavigate();
   const [checkouts, setCheckouts] = useState<Checkout[]>(cachedCheckouts || []);
   const [selectedCheckoutId, setSelectedCheckoutId] = useState<string>("");
-  const [selectedToolName, setSelectedToolName] = useState<string>("");
   const [selectedTag, setSelectedTag] = useState<string>("");
   const [selectedSite, setSelectedSite] = useState<string>("");
   const [notes, setNotes] = useState("");
@@ -88,7 +85,6 @@ export default function Checkin() {
         const checkout = data.find(c => c.id === checkoutIdParam);
         if (checkout) {
           setSelectedCheckoutId(checkout.id);
-          setSelectedToolName(checkout.tools.name);
           setSelectedTag(checkout.selected_tag || "");
           setSelectedSite(checkout.construction_site || "");
         }
@@ -96,7 +92,6 @@ export default function Checkin() {
         const checkout = data.find(c => c.tool_id === toolIdParam);
         if (checkout) {
           setSelectedCheckoutId(checkout.id);
-          setSelectedToolName(checkout.tools.name);
           setSelectedTag(checkout.selected_tag || "");
           setSelectedSite(checkout.construction_site || "");
         }
@@ -214,7 +209,6 @@ export default function Checkin() {
                   onCheckedChange={(v) => {
                     setManualMode(v);
                     setSelectedCheckoutId("");
-                    setSelectedToolName("");
                     setSelectedTag("");
                     setSelectedSite("");
                     if (!v) setManualDate("");
@@ -254,7 +248,6 @@ export default function Checkin() {
                       setSelectedCheckoutId(id);
                       const checkout = checkouts.find(c => c.id === id);
                       if (checkout) {
-                        setSelectedToolName(checkout.tools.name);
                         setSelectedTag(checkout.selected_tag || "");
                         setSelectedSite(checkout.construction_site || "");
                       }

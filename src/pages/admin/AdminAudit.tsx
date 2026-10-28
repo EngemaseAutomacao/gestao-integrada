@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Search, Eye, Shield, Wrench, Car, User, LogIn, LogOut, UserCheck, Trash2, ArrowRightLeft, X, CalendarIcon, FileText, FileSpreadsheet, ShieldCheck } from "lucide-react";
+import { Search, Eye, Shield, Wrench, Car, User, LogIn, LogOut, UserCheck, Trash2, ArrowRightLeft, X, FileText, FileSpreadsheet, ShieldCheck } from "lucide-react";
 import { HistorySkeleton } from "@/components/PageSkeleton";
 import { format, subDays, subMonths, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";

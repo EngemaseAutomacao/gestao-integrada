@@ -41,7 +41,7 @@ export default function Changelog() {
           icon: <CheckCircle2 className="w-4 h-4" />,
         });
       }
-    } catch (err) {
+    } catch {
       toast.error("Não foi possível verificar atualizações", {
         description: "Verifique sua conexão e tente novamente.",
       });

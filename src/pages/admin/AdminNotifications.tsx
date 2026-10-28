@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { Bell, Loader2, AlertCircle, Package, Clock, Send, Trash2 } from "lucide-react";
+import { Bell, Loader2, AlertCircle, Clock, Send, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useQuery } from "@tanstack/react-query";
 

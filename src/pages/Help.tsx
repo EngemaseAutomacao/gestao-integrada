@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HelpCircle, Wrench, Car, Shield, History, Search, Rocket, Bell, Smartphone, LogIn, KeyRound, WifiOff, Users, Sparkles } from "lucide-react";
+import { HelpCircle, Wrench, Car, Shield, Search, Rocket, Bell, Smartphone, LogIn, KeyRound, WifiOff, Users, Sparkles } from "lucide-react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

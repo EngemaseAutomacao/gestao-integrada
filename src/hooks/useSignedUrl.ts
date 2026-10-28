@@ -11,8 +11,3 @@ export function useSignedUrl(path: string | null | undefined, _overrideBucket?: 
   return useMemo(() => (path ? fileUrl(extractStoragePath(path)) : null), [path]);
 }
 
-export function useSignedUrls(urls: (string | null | undefined)[], _overrideBucket?: string) {
-  const key = JSON.stringify(urls);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useMemo(() => urls.map((u) => (u ? fileUrl(extractStoragePath(u)) : null)), [key]);
-}

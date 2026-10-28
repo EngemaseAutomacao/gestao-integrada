@@ -12,8 +12,8 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { OfflineProvider } from "@/contexts/OfflineContext";
 import Layout from "@/components/Layout";
+import { AdminRoute } from "@/components/AdminRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { DashboardSkeleton as PageSkeleton } from "@/components/PageSkeleton";
 import UpdatePrompt from "./components/UpdatePrompt";
 import { ChangelogModal } from "./components/ChangelogModal";
 import { OnboardingTutorial } from "./components/OnboardingTutorial";
@@ -38,8 +38,6 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 // AdminTools removed - integrated into AdminConstructionSites
 // AdminHistory removed - unused (replaced by AdminHistorico)
-const AdminLogs = lazy(() => import("./pages/admin/AdminLogs"));
-const AdminAnalytics = lazy(() => import("./pages/admin/AdminAnalytics"));
 const AdminNotifications = lazy(() => import("./pages/admin/AdminNotifications"));
 const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 
@@ -47,7 +45,6 @@ const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminConstructionSites = lazy(() => import("./pages/admin/AdminConstructionSites"));
 const AdminGallery = lazy(() => import("./pages/admin/AdminGallery"));
 const AdminDataRetention = lazy(() => import("./pages/admin/AdminDataRetention"));
-const AdminAudit = lazy(() => import("./pages/admin/AdminAudit"));
 // AdminVehicleHistory removed - unused
 // ReportIssue, ReportVehicleIssue, AdminProblemas removidos — módulo descontinuado
 const AdminAuditoria = lazy(() => import("./pages/admin/AdminAuditoria"));
@@ -170,28 +167,30 @@ const App = () => (
                       <Route path="/checkin" element={<Navigate to="/ferramentas/devolucao" replace />} />
                       <Route path="/history" element={<Navigate to="/ferramentas/historico" replace />} />
                       {/* Admin Routes */}
-                      <Route path="/admin" element={<AdminDashboard />} />
-                      <Route path="/admin/users" element={<AdminUsers />} />
-                      <Route path="/admin/tools" element={<Navigate to="/admin/construction-sites?tab=ferramentas" replace />} />
-                      <Route path="/admin/history" element={<Navigate to="/admin/historico?tab=ferramentas" replace />} />
-                      <Route path="/admin/historico" element={<AdminHistorico />} />
-                      <Route path="/admin/logs" element={<Navigate to="/admin/auditoria?tab=logs" replace />} />
-                      <Route path="/admin/analytics" element={<Navigate to="/admin/analytics-hub?tab=ferramentas" replace />} />
-                      <Route path="/admin/analytics-hub" element={<AdminAnalyticsHub />} />
-                      <Route path="/admin/notifications" element={<AdminNotifications />} />
-                      <Route path="/admin/maintenance" element={<Navigate to="/admin" replace />} />
-                      <Route path="/admin/reports" element={<AdminReports />} />
-                      <Route path="/admin/manual" element={<Navigate to="/admin" replace />} />
-                      <Route path="/admin/issues" element={<Navigate to="/admin" replace />} />
-                      <Route path="/admin/problemas" element={<Navigate to="/admin" replace />} />
-                      <Route path="/admin/construction-sites" element={<AdminConstructionSites />} />
-                      <Route path="/admin/gallery" element={<AdminGallery />} />
-                      <Route path="/admin/data-retention" element={<AdminDataRetention />} />
-                      <Route path="/admin/audit" element={<Navigate to="/admin/auditoria?tab=auditoria" replace />} />
-                      <Route path="/admin/auditoria" element={<AdminAuditoria />} />
-                      <Route path="/admin/ferramentas-em-uso" element={<AdminToolsInUse />} />
-                      <Route path="/admin/veiculos-em-uso" element={<AdminVehiclesInUse />} />
-                      <Route path="/admin/ultimos-acessos" element={<AdminUserAccess />} />
+                      <Route element={<AdminRoute />}>
+                        <Route path="/admin" element={<AdminDashboard />} />
+                        <Route path="/admin/users" element={<AdminUsers />} />
+                        <Route path="/admin/tools" element={<Navigate to="/admin/construction-sites?tab=ferramentas" replace />} />
+                        <Route path="/admin/history" element={<Navigate to="/admin/historico?tab=ferramentas" replace />} />
+                        <Route path="/admin/historico" element={<AdminHistorico />} />
+                        <Route path="/admin/logs" element={<Navigate to="/admin/auditoria?tab=logs" replace />} />
+                        <Route path="/admin/analytics" element={<Navigate to="/admin/analytics-hub?tab=ferramentas" replace />} />
+                        <Route path="/admin/analytics-hub" element={<AdminAnalyticsHub />} />
+                        <Route path="/admin/notifications" element={<AdminNotifications />} />
+                        <Route path="/admin/maintenance" element={<Navigate to="/admin" replace />} />
+                        <Route path="/admin/reports" element={<AdminReports />} />
+                        <Route path="/admin/manual" element={<Navigate to="/admin" replace />} />
+                        <Route path="/admin/issues" element={<Navigate to="/admin" replace />} />
+                        <Route path="/admin/problemas" element={<Navigate to="/admin" replace />} />
+                        <Route path="/admin/construction-sites" element={<AdminConstructionSites />} />
+                        <Route path="/admin/gallery" element={<AdminGallery />} />
+                        <Route path="/admin/data-retention" element={<AdminDataRetention />} />
+                        <Route path="/admin/audit" element={<Navigate to="/admin/auditoria?tab=auditoria" replace />} />
+                        <Route path="/admin/auditoria" element={<AdminAuditoria />} />
+                        <Route path="/admin/ferramentas-em-uso" element={<AdminToolsInUse />} />
+                        <Route path="/admin/veiculos-em-uso" element={<AdminVehiclesInUse />} />
+                        <Route path="/admin/ultimos-acessos" element={<AdminUserAccess />} />
+                      </Route>
 
                       {/* Ponto Online & Transferências removidos — redirect para Home */}
                       <Route path="/ponto" element={<Navigate to="/" replace />} />

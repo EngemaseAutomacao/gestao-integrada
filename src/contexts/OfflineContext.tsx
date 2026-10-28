@@ -199,8 +199,8 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
 
     isSyncing.current = true;
     let successCount = 0;
-    let retryOps: PendingOperation[] = [];
-    let newFailed: PendingOperation[] = [];
+    const retryOps: PendingOperation[] = [];
+    const newFailed: PendingOperation[] = [];
     const idMap = getIdMap();
 
     for (const op of ops) {

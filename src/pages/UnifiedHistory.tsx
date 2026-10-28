@@ -62,7 +62,6 @@ export default function UnifiedHistory({
   const [loading, setLoading] = useState(true);
   const [periodFilter, setPeriodFilter] = useState("7d");
   const [typeFilter, setTypeFilter] = useState(initialType);
-  const [selectedEvent, setSelectedEvent] = useState<UnifiedEvent | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "timeline">("list");
 
   useEffect(() => {
@@ -327,7 +326,6 @@ export default function UnifiedHistory({
                 <DialogTrigger asChild>
                   <Card 
                     className="p-3 transition-all hover:shadow-soft hover:border-primary/50 cursor-pointer group"
-                    onClick={() => setSelectedEvent(ev)}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`p-2 rounded-full shrink-0 ${colorMap[ev.type]}`}>

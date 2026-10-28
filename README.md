@@ -52,6 +52,7 @@ Sem `BLOB_READ_WRITE_TOKEN`, as fotos ficam em `.data/uploads` localmente.
 1. **Importe o repositório** na Vercel. O `vercel.json` já define build, função e crons.
 2. **Banco:** em *Storage*, crie um **Prisma Postgres** e conecte ao projeto. Isso cria a `DATABASE_URL`.
 3. **Fotos:** em *Storage*, crie um **Blob** e conecte ao projeto. Isso cria o `BLOB_READ_WRITE_TOKEN`.
+   No plano Hobby o Blob tem 1 GB; por isso o app comprime as fotos antes de enviar.
 4. **Variáveis de ambiente** (*Settings → Environment Variables*), conforme o `.env.example`:
    - `AUTH_SECRET` (obrigatória): gere com `openssl rand -base64 48`.
    - `CRON_SECRET` (obrigatória para as rotinas automáticas).

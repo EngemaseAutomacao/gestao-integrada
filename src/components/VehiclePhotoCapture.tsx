@@ -53,7 +53,7 @@ export function getRequiredPhotoKeys(vehicleType: VehicleKind = "vehicle", inclu
   ];
 }
 
-export default function VehiclePhotoCapture({ photos, previews, onPhotoChange, includeDashboard = false, vehicleType = "vehicle", allowGallery = false }: VehiclePhotoCaptureProps) {
+export default function VehiclePhotoCapture({ previews, onPhotoChange, includeDashboard = false, vehicleType = "vehicle", allowGallery = false }: VehiclePhotoCaptureProps) {
   const ANGLES: PhotoAngle[] = vehicleType === "platform"
     ? [...BASE_ANGLES, ...PLATFORM_EXTRA_ANGLES]
     : [...BASE_ANGLES, ...(includeDashboard ? [DASHBOARD_ANGLE] : []), ...INTERIOR_ANGLES];

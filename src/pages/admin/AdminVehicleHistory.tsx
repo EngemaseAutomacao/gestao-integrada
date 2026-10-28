@@ -518,24 +518,6 @@ export default function AdminVehicleHistory() {
     return <HistorySkeleton />;
   }
 
-  const PhotoSection = ({ label, photos }: { label: string; photos: { label: string; path: string | null }[] }) => {
-    const validPhotos = photos.filter(p => p.path);
-    if (validPhotos.length === 0) return null;
-    return (
-      <div className="space-y-2">
-        <p className="text-sm font-medium">{label}</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {validPhotos.map((photo, i) => (
-            <div key={i}>
-              <p className="text-xs text-muted-foreground mb-1">{photo.label}</p>
-              <SignedImage storagePath={photo.path!} alt={photo.label} className="w-full h-24 object-cover rounded-lg" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const activeFilterCount =
     (searchQuery ? 1 : 0) +
     (statusFilter !== "all" ? 1 : 0) +

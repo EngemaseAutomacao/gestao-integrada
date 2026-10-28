@@ -64,7 +64,7 @@ export function AssetTimeline({ events }: AssetTimelineProps) {
       <div className="absolute left-5 top-0 bottom-0 w-px bg-border" />
 
       <div className="space-y-4">
-        {events.map((event, index) => (
+        {events.map((event) => (
           <div key={event.id} className="relative flex gap-4 pl-2">
             {/* Icon circle */}
             <div className={`relative z-10 flex items-center justify-center w-7 h-7 rounded-full shrink-0 ${getTimelineColor(event.type)}`}>

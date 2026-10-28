@@ -26,7 +26,6 @@ function secretKey() {
 }
 
 export function toPublicProfile(p: profiles): PublicProfile {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password_hash, token_version, ...rest } = p;
   return rest;
 }

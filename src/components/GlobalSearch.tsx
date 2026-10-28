@@ -3,7 +3,6 @@ import { Search, Wrench, Car, Users, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { searchAll } from "@/lib/search";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface SearchResult {
   id: string;
@@ -19,8 +18,6 @@ export function GlobalSearch() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { profile } = useAuth();
-  const isAdmin = profile?.role === "admin";
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 

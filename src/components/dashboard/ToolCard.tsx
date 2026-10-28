@@ -19,7 +19,6 @@ interface Tool {
 interface ToolCardProps {
   tool: Tool;
   userCheckouts: any[];
-  conditionLabels: Record<string, string>;
   onNavigate: (path: string) => void;
   onEnlargeImage: (url: string) => void;
   onCheckout: (id: string) => void;
@@ -30,7 +29,6 @@ interface ToolCardProps {
 export function ToolCard({
   tool,
   userCheckouts,
-  conditionLabels,
   onNavigate,
   onCheckout,
   onCheckin,

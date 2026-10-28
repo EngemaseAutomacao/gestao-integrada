@@ -20,8 +20,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { cn } from "@/lib/utils";
 import { DashboardSkeleton } from "@/components/PageSkeleton";
 import { exportToPDF, exportToExcel } from "@/lib/exportUtils";
-import { PendingCheckoutsCard } from "@/components/dashboard/PendingCheckoutsCard";
-import { ToolStats } from "@/components/dashboard/ToolStats";
 import { ToolCard } from "@/components/dashboard/ToolCard";
 
 interface Tool {
@@ -35,14 +33,6 @@ interface Tool {
   quantity_total: number;
   employee_only: boolean;
 }
-
-const conditionLabels: Record<string, string> = {
-  excellent: "Excelente",
-  good: "Bom",
-  fair: "Regular",
-  poor: "Ruim",
-  needs_maintenance: "Precisa Manutenção",
-};
 
 export default function Dashboard() {
   const { profile } = useAuth();
@@ -63,9 +53,6 @@ export default function Dashboard() {
   };
   
   
-  const [multiSelectMode, setMultiSelectMode] = useState(false);
-  const [selectedCheckouts, setSelectedCheckouts] = useState<Set<string>>(new Set());
-  const [bulkReturnLoading, setBulkReturnLoading] = useState(false);
   const [extendDialogOpen, setExtendDialogOpen] = useState(false);
   const [extendCheckoutId, setExtendCheckoutId] = useState<string | null>(null);
   const [extendToolName, setExtendToolName] = useState("");
@@ -182,11 +169,6 @@ export default function Dashboard() {
     return u.sort();
   }, [tools]);
 
-  const conditions = useMemo(() => {
-    const u = [...new Set(tools.map(t => t.condition).filter(Boolean))] as string[];
-    return u.sort();
-  }, [tools]);
-
   const hasActiveFilters =
     brandFilter !== "all" || conditionFilter !== "all" || availabilityFilter !== "all" || categoryFilter !== "all";
 
@@ -257,46 +239,6 @@ export default function Dashboard() {
     setExtendDays(value);
     const days = parseInt(value, 10);
     setExtendDate(Number.isNaN(days) ? undefined : addDays(new Date(), days));
-  };
-
-  const toggleSelectCheckout = (id: string) => {
-    setSelectedCheckouts((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    if (!pendingCheckouts) return;
-    if (selectedCheckouts.size === pendingCheckouts.length) {
-      setSelectedCheckouts(new Set());
-    } else {
-      setSelectedCheckouts(new Set(pendingCheckouts.map((c: any) => c.id)));
-    }
-  };
-
-  const exitMultiSelect = () => {
-    setMultiSelectMode(false);
-    setSelectedCheckouts(new Set());
-  };
-
-  const handleBulkReturn = async () => {
-    if (selectedCheckouts.size === 0 || !profile?.id) return;
-    setBulkReturnLoading(true);
-    try {
-      const ids = Array.from(selectedCheckouts);
-      await api.post("/tool-checkouts/checkin", { ids });
-
-      toast.success(`${ids.length} ferramenta(s) devolvida(s) com sucesso!`);
-      queryClient.invalidateQueries({ queryKey: ["pending-tool-checkouts"] });
-      exitMultiSelect();
-    } catch (error: any) {
-      toast.error("Erro ao devolver ferramentas", { description: error.message });
-    } finally {
-      setBulkReturnLoading(false);
-    }
   };
 
   if (loading) {
@@ -555,7 +497,6 @@ export default function Dashboard() {
                         <ToolCard
                           tool={tool}
                           userCheckouts={userCheckouts}
-                          conditionLabels={conditionLabels}
                           onNavigate={navigate}
                           onEnlargeImage={setEnlargedImage}
                           onCheckout={handleCheckout}
@@ -604,7 +545,6 @@ export default function Dashboard() {
                     key={tool.id}
                     tool={tool}
                     userCheckouts={userCheckouts}
-                    conditionLabels={conditionLabels}
                     onNavigate={navigate}
                     onEnlargeImage={setEnlargedImage}
                     onCheckout={handleCheckout}

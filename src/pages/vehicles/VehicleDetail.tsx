@@ -1,10 +1,7 @@
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
 import { Car, History, Calendar, MapPin, Clock, PlugZap } from "lucide-react";
 import { ModuleHero } from "@/components/ModuleHero";
 import { format } from "date-fns";
@@ -61,23 +58,8 @@ interface CheckoutRecord {
 
 
 
-const severityLabels: Record<string, string> = {
-  low: "Baixa",
-  medium: "Média",
-  high: "Alta",
-  critical: "Crítica",
-};
-
-const statusLabels: Record<string, string> = {
-  open: "Aberto",
-  in_progress: "Em Andamento",
-  resolved: "Resolvido",
-  closed: "Fechado",
-};
-
 export default function VehicleDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const { data, isLoading: loading } = useQuery({
     queryKey: ["vehicle-detail", id],
