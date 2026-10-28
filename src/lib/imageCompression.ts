@@ -1,6 +1,11 @@
+/** Fotos menores que isso já estão leves e vão como estão. */
+const SKIP_BELOW_BYTES = 400 * 1024;
+const MAX_SIDE = 1600;
+const JPEG_QUALITY = 0.75;
+
 /**
  * Compress an image file/blob before uploading.
- * Reduces 3-5MB camera photos to ~300-500KB.
+ * Reduces 3-5MB camera photos to ~200-400KB.
  */
 export async function compressImage(
   file: File | Blob,
@@ -8,7 +13,7 @@ export async function compressImage(
   quality = 0.8
 ): Promise<Blob> {
   const img = await createImageBitmap(file);
-  const scale = Math.min(1, maxWidth / img.width);
+  const scale = Math.min(1, maxWidth / Math.max(img.width, img.height));
   const w = Math.round(img.width * scale);
   const h = Math.round(img.height * scale);
 
@@ -36,4 +41,19 @@ export async function compressDataUrl(
     reader.onerror = reject;
     reader.readAsDataURL(compressed);
   });
+}
+
+/**
+ * Reduz fotos grandes (lado maior até 1600 px, JPEG) antes do envio. Se o
+ * navegador não conseguir decodificar (ex.: HEIC) ou o resultado não ficar
+ * menor, devolve o original.
+ */
+export async function shrinkPhoto(file: Blob): Promise<Blob> {
+  if (file.size < SKIP_BELOW_BYTES) return file;
+  try {
+    const compressed = await compressImage(file, MAX_SIDE, JPEG_QUALITY);
+    return compressed.size < file.size ? compressed : file;
+  } catch {
+    return file;
+  }
 }

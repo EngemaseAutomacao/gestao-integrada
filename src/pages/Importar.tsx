@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Upload, CheckCircle2, Images } from "lucide-react";
 import { toast } from "sonner";
+import { shrinkPhoto } from "@/lib/imageCompression";
 import engemaseLogo from "@/assets/engemase-logo.png";
 
 const TABLE_LABELS: Record<string, string> = {
@@ -47,6 +48,7 @@ interface PhotoProgress {
   total: number;
   done: number;
   imported: number;
+  replaced: number;
   existing: number;
   failed: string[];
   finished: boolean;
@@ -102,6 +104,10 @@ export default function Importar() {
   };
 
   const uploadPhoto = async (path: string, bytes: Uint8Array) => {
+    // Fotos JPEG grandes são reduzidas (o plano grátis do Blob tem 1 GB); a
+    // versão menor substitui a que já tiver sido enviada antes.
+    const original = new Blob([bytes as Uint8Array<ArrayBuffer>], { type: "image/jpeg" });
+    const body = /\.jpe?g$/i.test(path) ? await shrinkPhoto(original) : original;
     const res = await fetch("/api/setup/import-file", {
       method: "POST",
       headers: {
@@ -109,12 +115,13 @@ export default function Importar() {
         "X-Requested-With": "engemase",
         "X-Import-Secret": secret.trim(),
         "X-File-Path": encodeURIComponent(path),
+        "X-Replace": "1",
       },
-      body: new Blob([bytes as Uint8Array<ArrayBuffer>]),
+      body,
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
-    return data.status as "imported" | "exists";
+    return data.status as "imported" | "replaced" | "exists";
   };
 
   const handlePhotos = async (e: React.FormEvent) => {
@@ -137,6 +144,7 @@ export default function Importar() {
         total: queue.length,
         done: 1,
         imported: first === "imported" ? 1 : 0,
+        replaced: first === "replaced" ? 1 : 0,
         existing: first === "exists" ? 1 : 0,
         failed: [],
         finished: false,
@@ -149,8 +157,7 @@ export default function Importar() {
           const item = queue[next++];
           try {
             const status = await uploadPhoto(item.path, item.bytes);
-            if (status === "exists") progress.existing++;
-            else progress.imported++;
+            progress[status === "exists" ? "existing" : status]++;
           } catch (err) {
             progress.failed.push(`${item.path}: ${err instanceof Error ? err.message : "erro"}`);
           }
@@ -251,7 +258,7 @@ export default function Importar() {
                   <div className="space-y-2">
                     <Progress value={(photos.done / photos.total) * 100} />
                     <p className="text-sm">
-                      {photos.done}/{photos.total} fotos processadas · {photos.imported} novas · {photos.existing} já
+                      {photos.done}/{photos.total} fotos processadas · {photos.imported} novas · {photos.replaced} reduzidas · {photos.existing} já
                       existiam
                       {photos.failed.length > 0 && ` · ${photos.failed.length} com erro`}
                     </p>

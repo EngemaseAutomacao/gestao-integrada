@@ -4,7 +4,7 @@ import { logAction } from "../lib/audit.js";
 import { db } from "../lib/db.js";
 import { HttpError, badRequest, forbidden, unauthorized } from "../lib/http.js";
 import { clientIp, enforceRateLimit } from "../lib/rateLimit.js";
-import { isSafeStoragePath, putFile } from "../lib/storage.js";
+import { deleteFiles, isSafeStoragePath, putFile } from "../lib/storage.js";
 import { importExportFile, type ExportFile } from "../services/importExport.js";
 
 /**
@@ -82,21 +82,31 @@ export const setupRoutes = new Hono()
     const contentType = CONTENT_TYPES[path.split(".").pop()?.toLowerCase() ?? ""];
     if (!contentType) throw badRequest("Tipo de arquivo não suportado");
 
-    if (await db.uploaded_files.findUnique({ where: { path }, select: { path: true } })) {
-      return c.json({ status: "exists" });
-    }
     const body = await c.req.arrayBuffer();
     if (body.byteLength === 0) throw badRequest("Arquivo vazio");
     if (body.byteLength > MAX_IMPORT_BYTES) throw new HttpError(413, "Arquivo maior que 4,4 MB");
 
+    // Com X-Replace, uma versão comprimida substitui a foto já enviada se for menor.
+    const existing = await db.uploaded_files.findUnique({ where: { path }, select: { size: true } });
+    const replace = c.req.header("x-replace") === "1";
+    if (existing && !(replace && existing.size != null && body.byteLength < existing.size)) {
+      return c.json({ status: "exists" });
+    }
+    if (existing) {
+      await deleteFiles([path]);
+      await db.uploaded_files.delete({ where: { path } });
+    }
+
     try {
       await putFile(path, body, contentType);
     } catch (err) {
-      // Envio anterior chegou ao Blob mas não ao banco: só registra.
+      // Envio anterior chegou ao Blob mas não ao banco: substitui.
       if (!/already exists/i.test(String(err))) throw err;
+      await deleteFiles([path]);
+      await putFile(path, body, contentType);
     }
     await db.uploaded_files.create({
       data: { path, owner_id: null, content_type: contentType, size: body.byteLength },
     });
-    return c.json({ status: "imported" });
+    return c.json({ status: existing ? "replaced" : "imported" });
   });

@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { shrinkPhoto } from "@/lib/imageCompression";
 
 /**
  * Convert a base64 data URL to a Blob
@@ -40,7 +41,8 @@ export const uploadDataUrlImage = async (
   try {
     const mimeType = type === "photo" ? "image/jpeg" : "image/png";
     const ext = type === "photo" ? "jpg" : "png";
-    const blob = dataUrlToBlob(dataUrl, mimeType);
+    const raw = dataUrlToBlob(dataUrl, mimeType);
+    const blob = type === "photo" ? await shrinkPhoto(raw) : raw;
     return await uploadBlob(blob, `${type}.${ext}`, { module, direction, prefix: type });
   } catch (error) {
     console.error(`Error uploading ${type}:`, error);
@@ -73,7 +75,9 @@ export const uploadFileImage = async (
   direction: "saidas" | "entradas",
   assetName?: string
 ): Promise<string> => {
-  return uploadBlob(file, file.name || "foto.jpg", { module, direction, prefix, assetName });
+  const blob = await shrinkPhoto(file);
+  const name = blob === file ? file.name || "foto.jpg" : "foto.jpg";
+  return uploadBlob(blob, name, { module, direction, prefix, assetName });
 };
 
 /**
