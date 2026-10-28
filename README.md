@@ -77,6 +77,9 @@ Sem `BLOB_READ_WRITE_TOKEN`, as fotos ficam em `.data/uploads` localmente.
 
 ## Migração dos dados do Supabase
 
+> **Projeto no Lovable Cloud (sem acesso ao Supabase)?** Siga
+> [`scripts/lovable-export/LEIA-ME.md`](scripts/lovable-export/LEIA-ME.md).
+
 O script copia usuários (com as senhas atuais), ferramentas, veículos, retiradas, obras,
 notificações, inscrições de push, logs e configurações. Ele pode ser executado mais de uma vez.
 

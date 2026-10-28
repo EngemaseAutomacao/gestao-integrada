@@ -1,14 +1,27 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2023", "DOM"],
+    "lib": [
+      "ES2023",
+      "DOM"
+    ],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["server", "api", "scripts", "prisma.config.ts"]
+  "include": [
+    "server",
+    "api",
+    "scripts",
+    "prisma.config.ts"
+  ],
+  "exclude": [
+    "scripts/lovable-export"
+  ]
 }

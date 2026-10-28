@@ -1,187 +1,303 @@
 /**
  * Migra os dados do projeto antigo (Supabase/Lovable) para o novo banco (Prisma Postgres).
  *
- * Uso:
- *   SOURCE_DATABASE_URL="postgresql://postgres:<senha>@db.<projeto>.supabase.co:5432/postgres" \
- *   DATABASE_URL="<url do Prisma Postgres>" \
- *   npm run migrate:supabase
+ * Duas formas de ler o projeto antigo:
  *
- * Para copiar também as fotos do bucket "imagens" para o Vercel Blob:
- *   SUPABASE_URL="https://<projeto>.supabase.co" SUPABASE_SERVICE_ROLE_KEY="..." BLOB_READ_WRITE_TOKEN="..." \
- *   npm run migrate:supabase -- --with-files
+ * A) Lovable Cloud (sem acesso direto ao Supabase) — via função de exportação
+ *    temporária criada no projeto antigo (ver scripts/lovable-export/LEIA-ME.md):
+ *      EXPORT_URL="https://<projeto>.supabase.co/functions/v1/export-data" \
+ *      EXPORT_SECRET="<segredo>" \
+ *      DATABASE_URL="<url do Prisma Postgres>" \
+ *      npm run migrate:supabase -- [--with-files]
+ *
+ * B) Acesso direto ao banco do Supabase:
+ *      SOURCE_DATABASE_URL="postgresql://..." DATABASE_URL="..." npm run migrate:supabase
+ *    (para fotos: SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY + --with-files)
+ *
+ * Em ambos os casos, para copiar as fotos para o Vercel Blob defina BLOB_READ_WRITE_TOKEN.
  *
  * - Os usuários mantêm as senhas atuais (o hash bcrypt do Supabase Auth é copiado).
- * - O script é idempotente: pode ser executado de novo (registros existentes são ignorados).
- * - Rode `npm run db:deploy` antes, para criar as tabelas no banco novo.
+ * - É idempotente: pode ser executado de novo (registros existentes são ignorados).
+ * - As tabelas do banco novo precisam existir (o deploy na Vercel já as cria).
  */
 import pg from "pg";
 import { putFile } from "../server/lib/storage.js";
 
-const SOURCE = process.env.SOURCE_DATABASE_URL;
-const TARGET = process.env.DATABASE_URL;
+type Row = Record<string, unknown>;
+
+interface SourceFile {
+  path: string;
+  owner: string | null;
+  mimetype: string | null;
+  created_at: string | Date | null;
+  download: () => Promise<ArrayBuffer>;
+}
+
+interface Source {
+  tableRows(table: string): Promise<Row[]>;
+  credentials(): Promise<{ id: string; encrypted_password: string | null; last_sign_in_at: string | null }[]>;
+  files(): AsyncGenerator<SourceFile>;
+  close(): Promise<void>;
+}
+
+const TARGET = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 const WITH_FILES = process.argv.includes("--with-files");
 
-if (!SOURCE || !TARGET) {
-  console.error("Defina SOURCE_DATABASE_URL (Supabase) e DATABASE_URL (banco novo).");
-  process.exit(1);
+/** Origem A: função de exportação no Lovable Cloud. */
+function exportSource(baseUrl: string, secret: string): Source {
+  const call = async <T>(params: Record<string, string | number>): Promise<T> => {
+    const url = new URL(baseUrl);
+    for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v));
+    for (let attempt = 1; ; attempt++) {
+      const res = await fetch(url, { headers: { "x-export-secret": secret } });
+      if (res.ok) return (await res.json()) as T;
+      const body = (await res.text()).slice(0, 300);
+      if (res.status === 401) throw new Error("EXPORT_SECRET incorreto (401). Confira o segredo cadastrado no Lovable.");
+      if (attempt >= 3 || res.status < 500) throw new Error(`Falha na exportação (${res.status}): ${body}`);
+      await new Promise((r) => setTimeout(r, 2000 * attempt));
+    }
+  };
+  return {
+    async tableRows(table) {
+      const all: Row[] = [];
+      for (let page = 0; ; page++) {
+        const { rows } = await call<{ rows: Row[] }>({ kind: "table", name: table, page });
+        all.push(...rows);
+        if (rows.length < 1000) return all;
+      }
+    },
+    async credentials() {
+      const { rows } = await call<{ rows: { id: string; encrypted_password: string | null; last_sign_in_at: string | null }[] }>({
+        kind: "credentials",
+      });
+      return rows;
+    },
+    async *files() {
+      for (let page = 0; ; page++) {
+        const { rows } = await call<{
+          rows: { name: string; owner: string | null; mimetype: string | null; created_at: string; signed_url: string | null }[];
+        }>({ kind: "files", page });
+        for (const f of rows) {
+          yield {
+            path: f.name,
+            owner: f.owner,
+            mimetype: f.mimetype,
+            created_at: f.created_at,
+            download: async () => {
+              if (!f.signed_url) throw new Error("sem URL assinada");
+              const res = await fetch(f.signed_url);
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return res.arrayBuffer();
+            },
+          };
+        }
+        if (rows.length < 200) return;
+      }
+    },
+    async close() {},
+  };
 }
 
-const src = new pg.Client({ connectionString: SOURCE, ssl: { rejectUnauthorized: false } });
+/** Origem B: conexão direta ao Postgres do Supabase. */
+async function pgSource(connectionString: string): Promise<Source> {
+  const src = new pg.Client({ connectionString, ssl: { rejectUnauthorized: false } });
+  await src.connect();
+  return {
+    async tableRows(table) {
+      return (await src.query(`SELECT * FROM public."${table}"`)).rows;
+    },
+    async credentials() {
+      return (await src.query(`SELECT id, encrypted_password, last_sign_in_at FROM auth.users`)).rows;
+    },
+    async *files() {
+      const url = process.env.SUPABASE_URL;
+      const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (!url || !key) throw new Error("--with-files exige SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY");
+      const { rows } = await src.query(
+        `SELECT name, owner, metadata->>'mimetype' AS mimetype, created_at FROM storage.objects
+          WHERE bucket_id = 'imagens' AND name NOT LIKE '%.emptyFolderPlaceholder' ORDER BY created_at`,
+      );
+      for (const o of rows) {
+        yield {
+          path: o.name,
+          owner: o.owner,
+          mimetype: o.mimetype,
+          created_at: o.created_at,
+          download: async () => {
+            const res = await fetch(`${url}/storage/v1/object/imagens/${String(o.name).split("/").map(encodeURIComponent).join("/")}`, {
+              headers: { Authorization: `Bearer ${key}`, apikey: key },
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.arrayBuffer();
+          },
+        };
+      }
+    },
+    close: () => src.end(),
+  };
+}
+
 const dst = new pg.Client({ connectionString: TARGET });
+const targetColumnsCache = new Map<string, Set<string>>();
 
-/** Colunas existentes nos dois lados (o schema novo tem algumas a mais/menos). */
-async function commonColumns(table: string): Promise<string[]> {
-  const q = `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1`;
-  const [a, b] = await Promise.all([src.query(q, [table]), dst.query(q, [table])]);
-  const target = new Set(b.rows.map((r) => r.column_name as string));
-  return a.rows.map((r) => r.column_name as string).filter((c) => target.has(c));
+async function targetColumns(table: string) {
+  if (!targetColumnsCache.has(table)) {
+    const { rows } = await dst.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1`,
+      [table],
+    );
+    targetColumnsCache.set(table, new Set(rows.map((r) => r.column_name as string)));
+  }
+  return targetColumnsCache.get(table)!;
 }
 
-async function copyRows(table: string, rows: Record<string, unknown>[], columns: string[], conflict = "DO NOTHING") {
+/** Insere as linhas usando só as colunas que existem no banco novo. */
+async function insertRows(table: string, rows: Row[], extra: Row = {}) {
+  if (rows.length === 0) {
+    console.log(`  ${table}: 0 registros`);
+    return;
+  }
+  const cols = await targetColumns(table);
+  const all = rows.map((r) => ({ ...r, ...extra }));
+  const columns = [...new Set(all.flatMap((r) => Object.keys(r)))].filter((c) => cols.has(c));
   let inserted = 0;
   const chunk = 200;
-  for (let i = 0; i < rows.length; i += chunk) {
-    const part = rows.slice(i, i + chunk);
+  for (let i = 0; i < all.length; i += chunk) {
+    const part = all.slice(i, i + chunk);
     const values: unknown[] = [];
     const tuples = part.map((row, r) => {
       const ph = columns.map((c, k) => {
-        const v = row[c];
+        const v = row[c] ?? null;
         values.push(v !== null && typeof v === "object" && !(v instanceof Date) ? JSON.stringify(v) : v);
         return `$${r * columns.length + k + 1}`;
       });
       return `(${ph.join(",")})`;
     });
-    const cols = columns.map((c) => `"${c}"`).join(",");
-    const res = await dst.query(`INSERT INTO "${table}" (${cols}) VALUES ${tuples.join(",")} ON CONFLICT ${conflict}`, values);
+    const res = await dst.query(
+      `INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(",")}) VALUES ${tuples.join(",")} ON CONFLICT DO NOTHING`,
+      values,
+    );
     inserted += res.rowCount ?? 0;
   }
   console.log(`  ${table}: ${inserted}/${rows.length} inseridos`);
 }
 
-async function copyTable(table: string, opts: { where?: string; extra?: Record<string, unknown> } = {}) {
-  const columns = await commonColumns(table);
-  const { rows } = await src.query(`SELECT ${columns.map((c) => `"${c}"`).join(",")} FROM public."${table}" ${opts.where ?? ""}`);
-  const extraCols = Object.keys(opts.extra ?? {});
-  const all = rows.map((r) => ({ ...r, ...opts.extra }));
-  await copyRows(table, all, [...columns, ...extraCols]);
-}
-
-async function migrateProfiles() {
-  // Junta perfil + credenciais do Supabase Auth (hash bcrypt e último login).
-  const { rows } = await src.query(`
-    SELECT p.*, u.encrypted_password AS password_hash, u.last_sign_in_at AS auth_last_sign_in_at
-      FROM public.profiles p
-      LEFT JOIN auth.users u ON u.id = p.id`);
-  const targetCols = new Set(
-    (await dst.query(`SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles'`)).rows.map(
-      (r) => r.column_name as string,
-    ),
-  );
-  const mapped = rows.map((r) => ({
-    ...r,
-    password_hash: r.password_hash || "",
-    last_sign_in_at: r.auth_last_sign_in_at ?? null,
-    // Usuários existentes já passaram pelo tour; só os novos verão.
-    onboarding_completed: true,
-    token_version: 0,
-  }));
-  const cols = Object.keys(mapped[0] ?? {}).filter((c) => targetCols.has(c));
-  await copyRows("profiles", mapped, cols);
-}
-
-async function migrateFiles() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("--with-files exige SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY");
+async function migrateFiles(source: Source) {
   if (!process.env.BLOB_READ_WRITE_TOKEN) console.warn("  BLOB_READ_WRITE_TOKEN ausente: arquivos irão para .data/uploads (local)");
-
-  const { rows } = await src.query(
-    `SELECT name, owner, metadata, created_at FROM storage.objects WHERE bucket_id = 'imagens' AND name NOT LIKE '%.emptyFolderPlaceholder' ORDER BY created_at`,
-  );
-  const done = new Set(
-    (await dst.query(`SELECT path FROM uploaded_files`)).rows.map((r) => r.path as string),
-  );
+  const done = new Set((await dst.query(`SELECT path FROM uploaded_files`)).rows.map((r) => r.path as string));
   let copied = 0;
+  let skipped = 0;
   let failed = 0;
-  for (const obj of rows) {
-    const path = obj.name as string;
-    if (done.has(path)) continue;
+  for await (const f of source.files()) {
+    if (done.has(f.path)) {
+      skipped++;
+      continue;
+    }
     try {
-      const res = await fetch(`${url}/storage/v1/object/imagens/${path.split("/").map(encodeURIComponent).join("/")}`, {
-        headers: { Authorization: `Bearer ${key}`, apikey: key },
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const body = await res.arrayBuffer();
-      const contentType = (obj.metadata?.mimetype as string) || res.headers.get("content-type") || "image/jpeg";
-      await putFile(path, body, contentType);
+      const body = await f.download();
+      const contentType = f.mimetype || "image/jpeg";
+      await putFile(f.path, body, contentType);
       await dst.query(
         `INSERT INTO uploaded_files (path, owner_id, content_type, size, created_at) VALUES ($1,$2,$3,$4,$5) ON CONFLICT DO NOTHING`,
-        [path, obj.owner ?? null, contentType, body.byteLength, obj.created_at],
+        [f.path, f.owner ?? null, contentType, body.byteLength, f.created_at ?? new Date()],
       );
       copied++;
       if (copied % 50 === 0) console.log(`  ${copied} arquivos copiados...`);
     } catch (err) {
       failed++;
-      console.warn(`  falha em ${path}: ${String(err)}`);
+      console.warn(`  falha em ${f.path}: ${String(err)}`);
     }
   }
-  console.log(`  arquivos: ${copied} copiados, ${failed} falhas, ${rows.length - copied - failed} já existentes`);
+  console.log(`  arquivos: ${copied} copiados, ${skipped} já existentes, ${failed} falhas`);
 }
 
 async function main() {
-  await src.connect();
-  await dst.connect();
-  console.log("Migrando dados...");
-
-  await migrateProfiles();
-  await copyTable("tools");
-  await copyTable("vehicles");
-  // Obras vieram do Trello: marca a origem para a sincronização poder gerenciá-las.
-  await copyTable("construction_sites", { extra: { source: "trello" } });
-  await copyTable("tool_checkouts");
-  await copyTable("vehicle_checkouts");
-  await copyTable("vehicle_charging_sessions");
-  await copyTable("push_subscriptions");
-  await copyTable("notifications", { where: "WHERE user_id IN (SELECT id FROM public.profiles)" });
-  await copyTable("system_logs");
-  await copyTable("sync_state");
-  // Configurações de retenção: mantém os valores escolhidos no sistema antigo.
-  const retention = await src.query(`SELECT setting_key, retention_days, enabled FROM public.data_retention_settings`);
-  for (const r of retention.rows) {
-    await dst.query(`UPDATE data_retention_settings SET retention_days=$2, enabled=$3 WHERE setting_key=$1`, [
-      r.setting_key,
-      r.retention_days,
-      r.enabled,
-    ]);
-  }
-  console.log(`  data_retention_settings: ${retention.rowCount} atualizados`);
-
-  // Corrige a disponibilidade a partir das retiradas em aberto.
-  await dst.query(`
-    UPDATE tools t SET quantity_available = GREATEST(0, t.quantity_total - (
-      SELECT count(*) FROM tool_checkouts c WHERE c.tool_id = t.id AND c.status = 'checked_out'))`);
-  await dst.query(`
-    UPDATE vehicles v SET status = CASE WHEN EXISTS (
-      SELECT 1 FROM vehicle_checkouts c WHERE c.vehicle_id = v.id AND c.status = 'checked_out') THEN 'in_use'
-      WHEN v.status = 'in_use' THEN 'available' ELSE v.status END`);
-  console.log("  estoque de ferramentas e status de veículos recalculados");
-
-  if (WITH_FILES) {
-    console.log("Copiando fotos do bucket 'imagens'...");
-    await migrateFiles();
+  if (!TARGET) throw new Error("Defina DATABASE_URL (banco novo, Prisma Postgres).");
+  let source: Source;
+  if (process.env.EXPORT_URL) {
+    if (!process.env.EXPORT_SECRET) throw new Error("Defina EXPORT_SECRET (o mesmo cadastrado no Lovable).");
+    source = exportSource(process.env.EXPORT_URL, process.env.EXPORT_SECRET);
+    console.log("Origem: função de exportação do Lovable Cloud");
+  } else if (process.env.SOURCE_DATABASE_URL) {
+    source = await pgSource(process.env.SOURCE_DATABASE_URL);
+    console.log("Origem: conexão direta ao Supabase");
   } else {
-    console.log("  (fotos não copiadas — use --with-files para copiar para o Vercel Blob)");
+    throw new Error("Defina EXPORT_URL + EXPORT_SECRET (Lovable Cloud) ou SOURCE_DATABASE_URL (Supabase).");
   }
+  await dst.connect();
 
-  console.log("Concluído.");
+  try {
+    console.log("Migrando dados...");
+
+    // Perfis + credenciais do Supabase Auth (hash bcrypt e último login).
+    const [profiles, creds] = await Promise.all([source.tableRows("profiles"), source.credentials()]);
+    const credById = new Map(creds.map((c) => [c.id, c]));
+    await insertRows(
+      "profiles",
+      profiles.map((p) => {
+        const c = credById.get(p.id as string);
+        return {
+          ...p,
+          password_hash: c?.encrypted_password || "",
+          last_sign_in_at: c?.last_sign_in_at ?? null,
+          // Usuários existentes já conhecem o sistema; o tour fica para os novos.
+          onboarding_completed: true,
+          token_version: 0,
+        };
+      }),
+    );
+    const semSenha = profiles.filter((p) => !credById.get(p.id as string)?.encrypted_password).length;
+    if (semSenha) console.warn(`  atenção: ${semSenha} perfil(is) sem senha no Auth — use "redefinir senha" no admin`);
+
+    const profileIds = new Set(profiles.map((p) => p.id as string));
+    for (const t of ["tools", "vehicles"]) await insertRows(t, await source.tableRows(t));
+    // Obras vieram do Trello: marca a origem para a sincronização poder gerenciá-las.
+    await insertRows("construction_sites", await source.tableRows("construction_sites"), { source: "trello" });
+    for (const t of ["tool_checkouts", "vehicle_checkouts", "vehicle_charging_sessions", "push_subscriptions"]) {
+      await insertRows(t, await source.tableRows(t));
+    }
+    await insertRows(
+      "notifications",
+      (await source.tableRows("notifications")).filter((n) => profileIds.has(n.user_id as string)),
+    );
+    for (const t of ["system_logs", "sync_state"]) await insertRows(t, await source.tableRows(t));
+
+    // Configurações de retenção: mantém os valores escolhidos no sistema antigo.
+    const retention = await source.tableRows("data_retention_settings");
+    for (const r of retention) {
+      await dst.query(`UPDATE data_retention_settings SET retention_days=$2, enabled=$3 WHERE setting_key=$1`, [
+        r.setting_key,
+        r.retention_days,
+        r.enabled,
+      ]);
+    }
+    console.log(`  data_retention_settings: ${retention.length} atualizados`);
+
+    // Corrige a disponibilidade a partir das retiradas em aberto.
+    await dst.query(`
+      UPDATE tools t SET quantity_available = GREATEST(0, t.quantity_total - (
+        SELECT count(*) FROM tool_checkouts c WHERE c.tool_id = t.id AND c.status = 'checked_out'))`);
+    await dst.query(`
+      UPDATE vehicles v SET status = CASE WHEN EXISTS (
+        SELECT 1 FROM vehicle_checkouts c WHERE c.vehicle_id = v.id AND c.status = 'checked_out') THEN 'in_use'
+        WHEN v.status = 'in_use' THEN 'available' ELSE v.status END`);
+    console.log("  estoque de ferramentas e status de veículos recalculados");
+
+    if (WITH_FILES) {
+      console.log("Copiando fotos do bucket 'imagens'...");
+      await migrateFiles(source);
+    } else {
+      console.log("  (fotos não copiadas — use --with-files para copiar para o Vercel Blob)");
+    }
+    console.log("Concluído.");
+  } finally {
+    await source.close().catch(() => {});
+  }
 }
 
 main()
   .catch((err) => {
-    console.error(err);
+    console.error(err instanceof Error ? err.message : err);
     process.exitCode = 1;
   })
-  .finally(async () => {
-    await src.end().catch(() => {});
-    await dst.end().catch(() => {});
-  });
+  .finally(() => dst.end().catch(() => {}));
