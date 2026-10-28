@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useUnsavedChanges } from "@/hooks/useUnsavedChanges";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Car, Search } from "lucide-react";
+import { AlertTriangle, Car, Gauge, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
@@ -114,6 +114,15 @@ export default function VehicleCheckout() {
   const requiredPhotoKeys = getRequiredPhotoKeys(vehicleType, true);
   const allPhotos = requiredPhotoKeys.every((k) => !!photos[k]);
 
+  // KM inicial: vem preenchido com o último KM conhecido para o funcionário conferir no painel.
+  const lastKm: number = selectedVehicleData?.last_km || 0;
+  const [kmInicial, setKmInicial] = useState("");
+  useEffect(() => {
+    setKmInicial(selectedVehicleData ? String(selectedVehicleData.last_km || "") : "");
+  }, [selectedVehicleData?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  const kmInicialNum = kmInicial.trim() === "" ? NaN : parseInt(kmInicial, 10);
+  const kmInicialOk = isPlatform || (Number.isFinite(kmInicialNum) && kmInicialNum >= 0);
+
   const uploadPhoto = async (file: File, prefix: string) => {
     return uploadFileImage(file, prefix, "veiculos", "saidas", selectedVehicleData?.name);
   };
@@ -201,12 +210,13 @@ export default function VehicleCheckout() {
       }
 
       if (!estimatedReturnDate) throw new Error("Selecione a previsão de devolução");
+      if (!kmInicialOk) throw new Error("Informe o KM inicial que aparece no painel");
 
       const insertData: any = {
         vehicle_id: selectedVehicle,
         user_id: effectiveUserId,
         checked_out_by: user.id,
-        km_checkout: selectedVehicleData?.last_km || 0,
+        km_checkout: isPlatform ? lastKm : kmInicialNum,
         destination: finalDestination,
         notes,
         status: "checked_out",
@@ -447,6 +457,39 @@ export default function VehicleCheckout() {
 
 
 
+              {!isPlatform && (
+                <div className="space-y-2">
+                  <Label htmlFor="km_inicial" className="flex items-center gap-2">
+                    <Gauge className="w-4 h-4" />
+                    KM inicial (painel) *
+                  </Label>
+                  <Input
+                    id="km_inicial"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    placeholder="Ex: 45230"
+                    value={kmInicial}
+                    onChange={(e) => setKmInicial(e.target.value)}
+                  />
+                  {Number.isFinite(kmInicialNum) && lastKm > 0 && kmInicialNum < lastKm ? (
+                    <p className="text-xs text-warning flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                      Menor que a última devolução ({lastKm.toLocaleString("pt-BR")} km). Confira o painel — se registrar assim, fica anotado para conferência.
+                    </p>
+                  ) : Number.isFinite(kmInicialNum) && lastKm > 0 && kmInicialNum > lastKm ? (
+                    <p className="text-xs text-warning flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                      {(kmInicialNum - lastKm).toLocaleString("pt-BR")} km acima da última devolução ({lastKm.toLocaleString("pt-BR")} km). Se o painel mostra isso mesmo, pode seguir — fica anotado para conferência.
+                    </p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Confira com o painel. Última devolução registrada: {lastKm.toLocaleString("pt-BR")} km.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="notes">Observações</Label>
                 <Textarea
@@ -485,7 +528,7 @@ export default function VehicleCheckout() {
           </Button>
           <Button
             type="submit"
-            disabled={!selectedVehicle || !destination || (isOnline && !allPhotos && !(isAdmin && manualMode && skipPhotos)) || checkoutMutation.isPending}
+            disabled={!selectedVehicle || !destination || !kmInicialOk || (isOnline && !allPhotos && !(isAdmin && manualMode && skipPhotos)) || checkoutMutation.isPending}
             className="flex-1"
           >
             {checkoutMutation.isPending ? "Registrando..." : "Registrar Saída"}

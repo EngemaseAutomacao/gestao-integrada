@@ -118,9 +118,22 @@ export async function createVehicleCheckout(actor: PublicProfile, input: Vehicle
     const manualDate = parseDate(input.checkout_date, "checkout_date");
     if (manualDate && !isAdmin) throw forbidden("Somente administradores podem informar data manual");
 
+    // KM inicial digitado pelo funcionário, conferido com o último KM conhecido.
+    // O hodômetro não volta: um valor menor fica com o conhecido; um valor maior
+    // indica uso sem registro. Os dois casos ficam anotados para conferência.
     const knownKm = await lastKnownKm(vehicle.id, tx);
-    const informedKm = typeof input.km_checkout === "number" && input.km_checkout >= 0 ? input.km_checkout : 0;
-    const kmCheckout = Math.max(knownKm, informedKm);
+    const informedKm =
+      typeof input.km_checkout === "number" && Number.isFinite(input.km_checkout) && input.km_checkout >= 0
+        ? Math.round(input.km_checkout)
+        : null;
+    const kmCheckout = Math.max(knownKm, informedKm ?? 0);
+    let kmNote: string | null = null;
+    if (informedKm !== null && knownKm > 0 && informedKm < knownKm) {
+      kmNote = `[KM inicial informado (${informedKm} km) menor que o último registrado (${knownKm} km): registrado ${knownKm} km — conferir]`;
+    } else if (informedKm !== null && knownKm > 0 && informedKm > knownKm) {
+      kmNote = `[KM inicial ${informedKm - knownKm} km acima da última devolução (${knownKm} km): possível uso sem registro — conferir]`;
+    }
+    const finalNotes = kmNote ? (notes ? `${notes} ${kmNote}` : kmNote) : notes;
 
     const checkout = await tx.vehicle_checkouts.create({
       data: {
@@ -132,7 +145,7 @@ export async function createVehicleCheckout(actor: PublicProfile, input: Vehicle
         destination,
         destination_address: (input.destination_address as string) || null,
         purpose: (input.purpose as string) || null,
-        notes,
+        notes: finalNotes,
         estimated_return_date: parseDate(input.estimated_return_date, "estimated_return_date"),
         estimated_return_time: (input.estimated_return_time as string) || null,
         is_outside_city: !!input.is_outside_city,

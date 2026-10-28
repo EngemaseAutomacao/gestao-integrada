@@ -18,7 +18,8 @@
 
 ### Alterado (cont.)
 - Nome do PWA: "Gestão Integrada".
-- Leitura do hodômetro por IA removida; KM de chegada digitado na devolução.
+- Leitura do hodômetro por IA removida; KM inicial digitado na saída (pré-preenchido) e KM final na devolução, com anotação automática de divergências.
+- Botão de notificação de teste no sininho.
 - Avisos de atraso verificados a cada 5 min (rota /api/cron/tick) com 1 consulta quando não há nada vencido.
 
 ---

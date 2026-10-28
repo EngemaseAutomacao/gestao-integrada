@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Bell, Volume2, VolumeX } from "lucide-react";
+import { Bell, BellRing, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -152,6 +152,30 @@ export function NotificationBell() {
     }
   };
 
+  /** Envia um push de teste para os aparelhos do próprio usuário (diagnóstico). */
+  const sendTestNotification = async () => {
+    try {
+      const data = await api.post<{ sentCount: number; subscriptionsCount: number }>("/notifications/test");
+      if (!data.subscriptionsCount) {
+        toast.error("Nenhum aparelho com notificações ativadas", {
+          description: "Abra o app no celular e toque em \"Ativar push\" no sininho.",
+        });
+      } else if (!data.sentCount) {
+        toast.error("O envio do push falhou", {
+          description: "Abra o app no celular uma vez para renovar a inscrição e tente de novo.",
+        });
+      } else {
+        toast.success("Notificação de teste enviada!", {
+          description: `Entregue em ${data.sentCount} de ${data.subscriptionsCount} aparelho(s).`,
+        });
+      }
+    } catch (error) {
+      toast.error("Não foi possível enviar o teste", {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    }
+  };
+
   const getNotificationColor = (type: string) => {
     switch (type) {
       case "overdue":
@@ -222,8 +246,14 @@ export function NotificationBell() {
                 </Button>
               )}
 
-
-
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={sendTestNotification}>
+                    <BellRing className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Enviar notificação de teste</TooltipContent>
+              </Tooltip>
 
               {unreadCount > 0 && (
                 <Button

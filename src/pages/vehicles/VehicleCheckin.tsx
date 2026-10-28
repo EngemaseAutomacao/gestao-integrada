@@ -401,7 +401,7 @@ export default function VehicleCheckin() {
                 <div className="space-y-2">
                   <Label htmlFor="manualKm" className="flex items-center gap-2">
                     <Gauge className="w-4 h-4" />
-                    KM de chegada (painel) *
+                    KM final (painel) *
                   </Label>
                   <Input
                     id="manualKm"
