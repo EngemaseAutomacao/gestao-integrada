@@ -1,4 +1,12 @@
-# Notas de Atualização - v3.0.1
+# Notas de Atualização - v3.0.2
+
+## [3.0.2] - 2026-10-29
+
+### Corrigido
+- Push: ao abrir o app com a permissão já dada, a inscrição é refeita e registrada no servidor se tiver sido perdida ou removida.
+- Push: evento `pushsubscriptionchange` no service worker atualiza a inscrição renovada pelo navegador.
+- Push: o service worker sempre exibe uma notificação (evita o aviso genérico do Chrome e a revogação da inscrição no iPhone).
+- Ícone pequeno das notificações (badge): novo `notification-badge.png` 96x96 branco com fundo transparente, usado em todas as notificações.
 
 ## [3.0.1] - 2026-10-28
 

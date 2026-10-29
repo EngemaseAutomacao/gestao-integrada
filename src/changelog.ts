@@ -11,6 +11,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "3.0.2",
+    date: "2026-10-29",
+    title: "Notificações mais confiáveis",
+    description: "Notificações chegando com o app fechado e sempre com o logo da Engemase.",
+    changes: [
+      { type: "fix", text: "Se o aparelho perder a inscrição de notificações, o app refaz sozinho ao ser aberto, sem precisar ativar de novo." },
+      { type: "fix", text: "Quando o navegador renova a inscrição de notificações, ela é atualizada mesmo com o app fechado." },
+      { type: "fix", text: "Todas as notificações aparecem com o logo da Engemase (antes algumas vinham com o ícone do navegador ou uma mancha branca na barra de status)." },
+    ],
+  },
+  {
     version: "3.0.1",
     date: "2026-10-28",
     title: "Fotos mais leves e correções",

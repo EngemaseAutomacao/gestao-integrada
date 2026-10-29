@@ -89,7 +89,7 @@ export async function sendPushToUserDetailed(userId: string, msg: PushMessage): 
     body: msg.body,
     tag: msg.tag,
     icon: "/icon-192.png",
-    badge: "/badge-icon.png",
+    badge: "/notification-badge.png",
     data: msg.data ?? {},
   });
 

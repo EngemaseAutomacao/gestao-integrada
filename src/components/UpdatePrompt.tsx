@@ -25,7 +25,7 @@ export default function UpdatePrompt() {
         (registration as any).showNotification("Nova Atualização Disponível! 🚀", {
           body: `Versão ${newVersion} está disponível. Atualize para obter as últimas melhorias.`,
           icon: "/icon-192.png",
-          badge: "/mono-192.png",
+          badge: "/notification-badge.png",
           tag: "system-update",
           vibrate: [200, 100, 200],
           requireInteraction: true,

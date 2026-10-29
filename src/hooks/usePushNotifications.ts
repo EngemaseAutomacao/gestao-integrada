@@ -66,29 +66,39 @@ export function usePushNotifications() {
       const registration = await navigator.serviceWorker.ready;
       let subscription: PushSubscription | null = await getPushManager(registration).getSubscription();
 
-      // Inscrição feita com a chave VAPID antiga (sistema Lovable) não recebe mais push:
-      // se a permissão já foi dada, refaz a inscrição em silêncio com a chave atual.
+      if (Notification.permission !== "granted") {
+        setIsSubscribed(false);
+        return;
+      }
+
+      // Com a permissão já dada, garante em silêncio que este aparelho está
+      // inscrito: refaz a inscrição se o navegador a perdeu ou se foi feita com
+      // a chave VAPID antiga, e registra de novo no servidor se ela foi removida
+      // de lá (ex.: o serviço de push recusou um envio).
       const vapidKey = await getVapidPublicKey();
-      if (subscription && !sameKey(subscription, vapidKey) && Notification.permission === "granted") {
+      if (subscription && !sameKey(subscription, vapidKey)) {
         await subscription.unsubscribe();
+        subscription = null;
+      }
+      let registered = false;
+      if (subscription) {
+        ({ subscribed: registered } = await api.get<{ subscribed: boolean }>("/push/status", {
+          endpoint: subscription.endpoint,
+        }));
+      } else {
         subscription = await getPushManager(registration).subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(vapidKey),
         });
+      }
+      if (!registered) {
         const json = subscription!.toJSON();
         await api.post("/push/subscribe", {
           endpoint: subscription!.endpoint,
           keys: { p256dh: json.keys?.p256dh || "", auth: json.keys?.auth || "" },
         });
       }
-
-      if (subscription) {
-        // Verifica se a inscrição está registrada no servidor
-        const { subscribed } = await api.get<{ subscribed: boolean }>("/push/status", {
-          endpoint: subscription.endpoint,
-        });
-        setIsSubscribed(subscribed);
-      }
+      setIsSubscribed(true);
     } catch (error) {
       console.error("Error checking subscription:", error);
     }
@@ -214,7 +224,7 @@ export function usePushNotifications() {
           navigator.serviceWorker.ready.then((registration) => {
             registration.showNotification(title, {
               icon: "/icon-192.png",
-              badge: "/mono-192.png",
+              badge: "/notification-badge.png",
               requireInteraction: false,
               ...options,
             });

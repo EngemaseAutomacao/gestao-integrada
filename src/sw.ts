@@ -231,31 +231,20 @@ self.addEventListener("periodicsync", (event: any) => {
 
 // ---- Push notifications (com agrupamento) ----
 self.addEventListener("push", (event) => {
-  // Push silencioso (sem payload) = ping do navegador pra manter o SW vivo,
-  // ou push que falhou na descriptografia. Não mostrar notificação fantasma.
-  if (!event.data) {
-    return;
-  }
-
+  // Todo push PRECISA virar notificação: se o SW não mostrar nada, o Chrome
+  // exibe a dele ("site atualizado em segundo plano", sem o logo do app) e o
+  // iPhone cancela a inscrição depois de alguns pushes "silenciosos".
   let data: any = {};
   try {
-    const payload = event.data.json();
+    const payload = event.data?.json();
     if (payload && typeof payload === "object") data = payload;
   } catch {
-    const text = event.data.text();
-    if (text && text.trim() !== "") {
-      data = { title: "Engemase", body: text };
-    }
+    const text = event.data?.text();
+    if (text && text.trim() !== "") data = { body: text };
   }
 
-  const title = data.title && String(data.title).trim();
-  const body = data.body && String(data.body).trim();
-
-  // Se não veio nem título nem corpo válidos, não notificar
-  // (evita "notificação vazia" com texto genérico).
-  if (!title && !body) {
-    return;
-  }
+  const title = (data.title && String(data.title).trim()) || "Gestão Integrada";
+  const body = (data.body && String(data.body).trim()) || "Você tem uma nova notificação.";
 
   // Tag única por notificação para que cada push apareça individualmente
   // no system tray (sem ser silenciosamente substituído pelo anterior).
@@ -266,10 +255,10 @@ self.addEventListener("push", (event) => {
     `engemase-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   event.waitUntil(
-    self.registration.showNotification(title || "Engemase", {
-      body: body || "",
+    self.registration.showNotification(title, {
+      body,
       icon: data.icon || "/icon-192.png",
-      badge: "/mono-192.png",
+      badge: "/notification-badge.png",
       tag,
       data: innerData,
       requireInteraction: false,
@@ -285,6 +274,42 @@ self.addEventListener("push", (event) => {
 });
 
 
+
+// ---- Inscrição trocada pelo navegador ----
+// O navegador pode renovar a inscrição de push sozinho (o endpoint antigo para
+// de funcionar). Refaz a inscrição e avisa o servidor, mesmo com o app fechado.
+self.addEventListener("pushsubscriptionchange", (event: any) => {
+  const oldSub: PushSubscription | null = event.oldSubscription ?? null;
+  event.waitUntil(
+    (async () => {
+      const newSub: PushSubscription | null =
+        event.newSubscription ??
+        (oldSub?.options?.applicationServerKey
+          ? await self.registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: oldSub.options.applicationServerKey,
+            })
+          : null);
+      if (!newSub) return;
+      const json = newSub.toJSON();
+      const headers = { "Content-Type": "application/json", "X-Requested-With": "engemase" };
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: JSON.stringify({ endpoint: newSub.endpoint, keys: json.keys }),
+      });
+      if (oldSub && oldSub.endpoint !== newSub.endpoint) {
+        await fetch("/api/push/unsubscribe", {
+          method: "POST",
+          credentials: "include",
+          headers,
+          body: JSON.stringify({ endpoint: oldSub.endpoint }),
+        }).catch(() => {});
+      }
+    })().catch((err) => console.warn("[SW] pushsubscriptionchange falhou", err))
+  );
+});
 
 // ---- Notification click ----
 self.addEventListener("notificationclick", (event) => {

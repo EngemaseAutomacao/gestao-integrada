@@ -198,7 +198,7 @@ export async function scheduleLocalReminder(
             tag: opts.tag,
             data: opts.data,
             icon: "/icon-192.png",
-            badge: "/icon-192.png",
+            badge: "/notification-badge.png",
           });
         }, delay);
         return true;
@@ -211,7 +211,7 @@ export async function scheduleLocalReminder(
       tag: opts.tag,
       data: opts.data,
       icon: "/icon-192.png",
-      badge: "/icon-192.png",
+      badge: "/notification-badge.png",
       showTrigger: new Trigger(opts.showAt),
     });
     return true;
